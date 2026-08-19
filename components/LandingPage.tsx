@@ -59,18 +59,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="cgr-definition" className="cgr-definition-section" aria-labelledby="cgr-definition-title">
-        <div className="section-shell cgr-definition-shell">
-          <span className="eyebrow">Computational Geological Reasoning™ (CGR™)</span>
-          <h2 id="cgr-definition-title">Geological reasoning has guided mineral discovery for generations.</h2>
-          <div className="cgr-definition-copy">
-            <p>CGR™ extends geological reasoning into computational systems.</p>
-            <p>CGR™ transforms exploration data into structured geological knowledge, systematically generating, testing, and rejecting competing interpretations to converge on the most evidence-supported geological hypotheses under uncertainty.</p>
-            <p>IREX ® is developing, validating, and commercialising CGR™ as a new category of exploration intelligence for decision-making under uncertainty.</p>
-          </div>
-        </div>
-      </section>
-
       <section className="reasoning-section" aria-labelledby="reasoning-title">
         <div className="section-shell reasoning-shell">
           <div className="reasoning-hero">
@@ -143,6 +131,21 @@ export default function LandingPage() {
             <span className="eyebrow">Built for Reasoning</span><h2>IREX Is Not Another prediction model</h2>
             <p>It is a reasoning system designed to identify invariants within noisy data — enabling decisions grounded in system understanding, not statistical patterns.</p>
           </div>
+        </div>
+      </section>
+
+      <section id="cgr-definition" className="cgr-definition-section" aria-labelledby="cgr-definition-title">
+        <div className="section-shell cgr-definition-shell">
+          <SpotlightCard className="cgr-definition-card" spotlightColor="rgba(0,184,196,.14)">
+            <span className="eyebrow">Computational Geological Reasoning™ (CGR™)</span>
+            <h2 id="cgr-definition-title">Geological reasoning has guided mineral discovery for generations.</h2>
+            <div className="cgr-definition-copy">
+              <p className="cgr-copper">CGR™ extends geological reasoning into computational systems.</p>
+              <p>CGR™ extends beyond prediction by transforming exploration data into structured geological knowledge, systematically generating, testing, and rejecting competing interpretations to converge on the most evidence-supported geological hypotheses under uncertainty.</p>
+              <p className="cgr-coral">IREX® is developing, validating, and commercialising CGR™ as a new category of exploration intelligence for decision-making under uncertainty.</p>
+            </div>
+            <p className="cgr-footnote">CGR™ is the next evolution of exploration intelligence.</p>
+          </SpotlightCard>
         </div>
       </section>
 

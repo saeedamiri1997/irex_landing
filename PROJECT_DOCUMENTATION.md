@@ -112,7 +112,7 @@ irex_landing/
 | 1 | `LandingPage` | `components/LandingPage.tsx` | **Page root** (`'use client'`). Owns the modal open/close state and composes every section of the page. |
 | 2 | `Header` | `components/Header.tsx` | Fixed top bar with brand logo + "REASONING FIRST" tagline. Uses GSAP ScrollTrigger to add the `is-floating` class (pill-shaped floating header) after scrolling 80px. |
 | 3 | `LineSidebar` | `components/LineSidebar.tsx` | Right-edge vertical dot navigation. Uses `IntersectionObserver` to highlight the active section and smooth-scrolls on click. Rendered list comes from `sections` in `lib/content.ts`. Hidden ≤900px. |
-| 4 | `ScrollVideoScene` | `components/ScrollVideoScene.tsx` | **Hero video scene.** ★ See §4. Pins a full-viewport section while scroll-scrubbing a single MP4, and swaps between 4 text panels (`videoScenes`) as progress crosses each scene's time range. |
+| 4 | `ScrollVideoScene` | `components/ScrollVideoScene.tsx` | **Hero video scene.** ★ See §4. Pins a full-viewport section while scroll-scrubbing a single MP4, and swaps between 5 text panels (`videoScenes`) as progress crosses each scene's time range. |
 | 5 | `SpotlightCard` | `components/SpotlightCard.tsx` | Wrapper card that tracks the mouse and sets CSS custom properties (`--mouse-x/y`, `--spotlight-color`) so a spotlight can be drawn in CSS. |
 | 6 | `SpecularButton` | `components/SpecularButton.tsx` | Reusable button whose surface is an OGL WebGL canvas (specular shine that follows the pointer). Used for all CTAs and the modal submit. |
 | 7 | `ShapeBlur` | `components/ShapeBlur.tsx` | Three.js WebGL effect: an animated rounded-rectangle border that brightens near the cursor. Used inside the Positioning card. |
@@ -128,18 +128,35 @@ irex_landing/
 2. `<LineSidebar />`
 3. `<ScrollVideoScene onApply={openApply} />` — hero (pinned scroll-scrub video)
 4. `<section id="prediction">` — "From Prediction To Reasoning"
-5. `<section id="cgr-definition">` — CGR™ definition
-6. `<section className="reasoning-section">` — "Generate. Test. Reject."
-7. `<section id="principle">` (manifesto) — "Every Deposit Is Individual"
-8. `<section id="transparency">` — "Designed for Auditability" (2-col SpotlightCards)
-9. `<section id="control">` — "Built for Control" (3-col SpotlightCards)
-10. `<section id="value">` — "Reduce Risk Before It Becomes Capital"
-11. `<section id="positioning">` — Positioning card with `ShapeBlur`
+5. `<section className="reasoning-section">` — "Generate. Test. Reject."
+6. `<section id="principle">` (manifesto) — "Every Deposit Is Individual"
+7. `<section id="transparency">` — "Designed for Auditability" (2-col SpotlightCards)
+8. `<section id="control">` — "Built for Control" (3-col SpotlightCards)
+9. `<section id="value">` — "Reduce Risk Before It Becomes Capital"
+10. `<section id="positioning">` — Positioning card with `ShapeBlur`
+11. `<section id="cgr-definition">` — CGR™ definition. **Moved here** (between positioning and apply); now a boxed card reusing the "Built for Control" `.spotlight-card` treatment (see §3.4).
 12. `<section id="apply">` (CTA) — "Early Adopter Program" with `Topography` background + `SpecularButton`
 13. `<footer className="site-footer">` — logo, tagline, LinkedIn link
 14. `<ApplyModal open={applyOpen} onClose={closeApply} />`
 
-Section IDs referenced by the sidebar (`lib/content.ts` → `sections`): `hero`, `prediction`, `cgr-definition`, `principle`, `transparency`, `control`, `value`, `positioning`, `apply`.
+Section IDs referenced by the sidebar (`lib/content.ts` → `sections`), in page order: `hero`, `prediction`, `principle`, `transparency`, `control`, `value`, `positioning`, `cgr-definition`, `apply`. (The `sections` array order was updated to match the relocated CGR section.)
+
+> **Note on `#hero`:** the `hero` section id lives on the `<ScrollVideoScene>` root (`<section id="hero" ...>`).
+
+### 3.3 Hero scroll-video scene panels
+
+The hero `ScrollVideoScene` now has **5 panels** (driven by `videoScenes` in `lib/content.ts`), in order:
+1. `cgr` — "Make Better Target Decisions Before You Drill." (CTA)
+2. `prediction` — **NEW.** "From Prediction To Reasoning" (title) / "Prediction shaped the last generation of exploration." (middle line) / "Reasoning will shape the next." (middle line) / "IREX optimizes for Decision Quality, Not Prediction Accuracy" (bold coral closing statement).
+3. `first-principles` — "Ore deposits are not predictable." (CTA)
+4. `problem` — "Decisions Are Made Under Noise"
+5. `limitations` — "Patterns Don’t Equal Understanding"
+
+Sizing rule for the `prediction` scene: the two middle lines (2–3) render **smaller** than the closing line (4). The closing statement is coral, bold, and kept on a **single line** on desktop/tablet; on phones (≤600px) it is reduced in size and allowed to wrap gracefully so it never overflows (a documented judgment call — see §9).
+
+### 3.4 CGR definition section (relocated + restyled)
+
+The `cgr-definition` section was moved from its original position (right after the `prediction` section) to **between `positioning` and `apply`**, and restyled as a boxed card that reuses the "Built for Control" `.spotlight-card` treatment (via the `SpotlightCard` component with `className="cgr-definition-card"`). Content lines are color-coded with the theme tokens: `--teal` (eyebrow line 1), default/muted (lines 2 & 4), `--copper` (line 3), `--coral` (line 5). A closing **footnote** ("CGR™ is the next evolution of exploration intelligence.") is styled coral, bold, and larger than the body text.
 
 > **Note on `#hero`:** the `hero` section id lives on the `<ScrollVideoScene>` root (`<section id="hero" ...>`).
 
@@ -282,16 +299,19 @@ ScrollTrigger.create({
 const NARRATIVE_DURATION = 25;
 ```
 
-The four `videoScenes` map onto this 25 s timeline with these start/end seconds (`lib/content.ts`):
+The five `videoScenes` map onto this 25 s timeline with these start/end seconds (`lib/content.ts`):
 
-| Scene id | Start (s) | End (s) |
-|---|---|---|
-| `cgr` (hero) | 0 | 4 |
-| `first-principles` | 4 | 11.92 |
-| `problem` | 11.92 | 19.58 |
-| `limitations` | 19.58 | 25 |
+| Scene id | Start (s) | End (s) | Duration (s) |
+|---|---|---|---|
+| `cgr` (hero) | 0 | 3.23 | 3.23 |
+| `prediction` (NEW) | 3.23 | 8.07 | 4.84 |
+| `first-principles` | 8.07 | 14.46 | 6.39 |
+| `problem` | 14.46 | 20.64 | 6.18 |
+| `limitations` | 20.64 | 25 | 4.36 |
 
-**Discrepancy to note:** The README says *"The four scroll-scrub videos are H.264 MP4 files"* (plural). The code, however, references **one single video file** (`/media/irex-scroll-narrative.mp4`) that is scrubbed across all four scenes. Either (a) the README is loosely worded and there is really one 25 s narrative MP4, or (b) there were originally four separate files and the implementation was consolidated to one. As the committed code stands, **only one video URL is referenced.** This wording discrepancy is marked here for manual review.
+> **Time redistribution (documented approach):** `NARRATIVE_DURATION` stays `25` and the ScrollTrigger `end: '+=520%'` is unchanged. The new scene was inserted second, and the five scenes were re-distributed **proportionally** across the same 25 s timeline: each original scene kept its relative weight (cgr=4, first-principles=7.92, problem=7.66, limitations=5.42) and the new scene was given a weight of 6 (a comfortable middle presence for its four lines of text), then all weights were scaled by `25 / (4+6+7.92+7.66+5.42) = 25/31` and converted to cumulative start/end seconds (rounded to 2 decimals). This preserves the original scroll pacing feel.
+
+**Discrepancy to note:** The README says *"The four scroll-scrub videos are H.264 MP4 files"* (plural). The code, however, references **one single video file** (`/media/irex-scroll-narrative.mp4`) that is scrubbed across all the scenes. Either (a) the README is loosely worded and there is really one 25 s narrative MP4, or (b) there were originally separate files and the implementation was consolidated to one. As the committed code stands, **only one video URL is referenced.** This wording discrepancy is marked here for manual review.
 
 ### 4.6 Poster image / fallback / autoplay / muted settings
 
@@ -519,6 +539,14 @@ How they're consumed (`lib/email.ts`): if `EMAIL_DELIVERY_MODE === 'log'`, email
 9. **Reduced-motion handling:** with `prefers-reduced-motion: reduce`, the hero video is hidden (`display: none`) and the section is no longer pinned (height becomes auto). Ensure the hero text remains readable without the video in that case.
 
 10. **API route specifics:** `/api/apply` (`app/api/apply/route.ts`) enforces a per-IP rate limit (max 5 POSTs / 60 s, keyed by `x-forwarded-for`), validates field lengths, and uses a hidden "website" honeypot field for spam (a non-empty value returns a fake `{ ok: true }`). It is `force-dynamic` and Node runtime. `GET /api/apply` returns email-config health.
+
+11. **CTA fix — judgment call (no live browser available):** The CTA button (`id="apply"` → `SpecularButton onClick={openApply}`) was reported as not opening `ApplyModal`. Code review showed the `onClick` handler IS correctly forwarded through `SpecularButton` (`...props` spread onto the `<button>`), and the modal logic (`applyOpen` state) is correct. Because this sandbox could not run a real browser (headless Chromium download is network-blocked), the failure could **not** be reproduced live. The reported symptom and the hint in the task pointed to the full-bleed `Topography` WebGL canvas layer overlapping the button and intercepting pointer events. Fix applied: `pointer-events: none` on `.cta-topography-layer` (and `pointer-events: auto` reaffirmed on `.cta-content`, which already had `z-index: 2`). This guarantees the decorative WebGL background can never block the button on desktop or touch. **If the CTA still fails after this change, re-open this issue and test in a real browser** — the wiring itself is correct.
+
+12. **Hero `prediction` scene closing line — judgment call on mobile wrapping:** The requirement was for "IREX optimizes for Decision Quality, Not Prediction Accuracy" to stay on a single line without wrapping. On desktop/tablet (≥601px) it is kept on one line via `white-space: nowrap` with a responsive `clamp()` font-size tuned so it fits the 720px scene container. On phones (≤600px) the 60-char monospace line cannot fit one line at a readable size (it would need ~9px text), so it is reduced and allowed to wrap gracefully instead of overflowing — this is a deliberate trade-off for legibility and no-overflow on small screens.
+
+13. **Sidebar `sections` array reordered:** Because the `cgr-definition` section was physically moved later in the page, the `sections` array in `lib/content.ts` (which drives the right-edge `LineSidebar` nav and its active-state tracking) was reordered to match the new DOM order. The sidebar is hidden ≤900px so this only affects desktop navigation order.
+
+14. **Branch note:** These changes are committed to `arena/01a01a99-irex-landing` (the session branch). They have **not** been merged into `main` because this environment is restricted to the session branch; merging to `main` is left to the user/CI.
 
 ---
 

@@ -577,6 +577,40 @@ h2 {
     color: var(--white);
 }
 
+/* =========================================================
+   HERO SCENE — FROM PREDICTION TO REASONING
+   Middle lines (2–3) are smaller than the closing line (4).
+   The closing statement is prominent, bold, coral, and kept on a
+   single line on desktop/tablet (no wrapping); on small screens its
+   size is reduced further before it is allowed to wrap gracefully
+   so it never overflows the viewport.
+   ========================================================= */
+
+.scene-copy[data-scene="prediction"] .scene-lead,
+.scene-copy[data-scene="prediction"] .scene-text-block p {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: rgba(245, 247, 250, 0.84);
+}
+
+.scene-copy[data-scene="prediction"] .scene-text-block {
+    margin-top: 1rem;
+}
+
+.scene-copy[data-scene="prediction"] .scene-closing {
+    margin: 1.5rem 0 0;
+
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(0.93rem, 1.05vw, 1.25rem);
+    line-height: 1.4;
+    font-weight: 700;
+
+    color: var(--coral);
+
+    white-space: nowrap;
+}
+
 
 /* =========================================================
    GENERAL SECTIONS
@@ -636,21 +670,61 @@ h2 {
     line-height: 1.45;
 }
 
+/* Relocated CGR definition, styled as a boxed card reusing the
+   "Built for Control" (.spotlight-card) treatment for consistency. */
 .cgr-definition-section {
-    padding-top: 0;
+    display: flex;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.cgr-definition-card {
+    min-height: 0;
+    padding: clamp(36px, 6vw, 84px);
+}
+
+.cgr-definition-shell {
+    max-width: 1060px;
+    margin: 0 auto;
+}
+
+.cgr-definition-card h2 {
+    font-size: clamp(2.2rem, 3.8vw, 48px);
+    line-height: 1;
+    margin: 0 0 1.8rem;
+    color: var(--white);
 }
 
 .cgr-definition-copy {
     display: grid;
     gap: 1.2rem;
-    max-width: 980px;
+    max-width: 900px;
 }
 
 .cgr-definition-copy p {
     margin: 0;
     color: var(--muted);
-    font-size: clamp(1.05rem, 1.8vw, 1.35rem);
-    line-height: 1.85;
+    font-size: clamp(1.02rem, 1.7vw, 1.3rem);
+    line-height: 1.8;
+}
+
+.cgr-definition-copy .cgr-copper {
+    color: var(--copper);
+}
+
+.cgr-definition-copy .cgr-coral {
+    color: var(--coral);
+}
+
+.cgr-footnote {
+    margin: 2.4rem 0 0;
+
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(1.15rem, 1.9vw, 1.6rem);
+    line-height: 1.45;
+    font-weight: 700;
+
+    color: var(--coral);
 }
 
 
@@ -1088,6 +1162,10 @@ h2 {
     inset: 0;
     width: 100%;
     height: 100%;
+
+    /* Decorative WebGL background: must never intercept pointer events,
+       otherwise it can sit over the CTA button and block clicks. */
+    pointer-events: none;
 }
 
 .topography-container {
@@ -1122,6 +1200,8 @@ h2 {
 .cta-content {
     position: relative;
     z-index: 2;
+
+    pointer-events: auto;
 
     text-align: center;
 
@@ -1511,6 +1591,15 @@ h2 {
         margin: 0 18px;
 
         width: calc(100vw - 36px);
+    }
+
+    /* On phones the closing statement cannot reasonably stay on a single
+       line at a readable size, so let it wrap gracefully (never overflow).
+       It remains the bold coral emphasis line, still larger than lines 2–3. */
+    .scene-copy[data-scene="prediction"] .scene-closing {
+        white-space: normal;
+        font-size: 1.02rem;
+        line-height: 1.5;
     }
 
     .spotlight-card {
