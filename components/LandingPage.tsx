@@ -50,15 +50,6 @@ export default function LandingPage() {
       <LineSidebar />
       <ScrollVideoScene onApply={openApply} />
 
-      <section id="prediction" className="prediction-shift-section" aria-labelledby="prediction-shift-title">
-        <div className="section-shell prediction-shift-shell">
-          <span className="eyebrow">From Prediction To Reasoning</span>
-          <h2 id="prediction-shift-title">Prediction shaped the last generation of exploration.</h2>
-          <p className="prediction-shift-subhead">Reasoning will shape the next.</p>
-          <p className="prediction-shift-emphasis">IREX optimizes for Decision Quality, Not Prediction Accuracy</p>
-        </div>
-      </section>
-
       <section className="reasoning-section" aria-labelledby="reasoning-title">
         <div className="section-shell reasoning-shell">
           <div className="reasoning-hero">
@@ -144,7 +135,6 @@ export default function LandingPage() {
               <p>CGR™ extends beyond prediction by transforming exploration data into structured geological knowledge, systematically generating, testing, and rejecting competing interpretations to converge on the most evidence-supported geological hypotheses under uncertainty.</p>
               <p className="cgr-coral">IREX® is developing, validating, and commercialising CGR™ as a new category of exploration intelligence for decision-making under uncertainty.</p>
             </div>
-            <p className="cgr-footnote">CGR™ is the next evolution of exploration intelligence.</p>
           </SpotlightCard>
         </div>
       </section>
@@ -188,7 +178,7 @@ export default function LandingPage() {
 
       <footer className="site-footer">
         <a href="#hero" className="footer-logo" aria-label="IREX home"><img src="/brand/irex-logo-dark.png" alt="IREX" /></a>
-        <p>CGR™ is the next evolution of exploration intelligence.</p>
+        <p className="footer-tagline">CGR™ is the next evolution of exploration intelligence.</p>
         <a href="https://www.linkedin.com/company/irex-pty-ltd/" target="_blank" rel="noreferrer" className="linkedin-link" aria-label="IREX on LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8.4H3.2V21h3.3V8.4ZM4.85 3A1.95 1.95 0 1 0 4.85 6.9 1.95 1.95 0 0 0 4.85 3ZM21 13.8c0-3.8-2-5.6-4.7-5.6-2.17 0-3.14 1.2-3.68 2.04V8.4H9.3V21h3.32v-6.24c0-1.65.31-3.25 2.36-3.25 2.02 0 2.04 1.89 2.04 3.36V21H21v-7.2Z"/></svg></a>
       </footer>
 

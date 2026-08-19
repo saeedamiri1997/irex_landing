@@ -108,6 +108,15 @@ export default function ScrollVideoScene({ onApply }: { onApply?: () => void }) 
                 <span className="eyebrow">{scene.eyebrow}</span>
               </div>
             )}
+            {scene.statements && scene.statements.length > 0 && (
+              <div className="scene-intro">
+                {scene.label && <span className="scene-intro__label">{scene.label}</span>}
+                {scene.statements.map((line) => (
+                  <p className="scene-intro__statement" key={line}>{line}</p>
+                ))}
+                {scene.preIntro && <p className="scene-intro__body">{scene.preIntro}</p>}
+              </div>
+            )}
             <h1>{scene.title}</h1>
             {scene.body && <p className="scene-lead">{scene.body}</p>}
             {scene.highlights

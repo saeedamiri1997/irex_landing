@@ -1,6 +1,5 @@
 export const sections = [
   { id: 'hero', label: 'Hero' },
-  { id: 'prediction', label: 'Prediction' },
   { id: 'principle', label: 'Principle' },
   { id: 'transparency', label: 'Transparency' },
   { id: 'control', label: 'Control' },
@@ -30,6 +29,10 @@ export type VideoScene = {
   closing?: string;
   coreLine?: string;
   cta?: boolean;
+  /** Three short punchy statements rendered above the title (large). */
+  statements?: string[];
+  /** Small body-style line rendered above the title, below the statements. */
+  preIntro?: string;
 };
 
 export const videoScenes: VideoScene[] = [
@@ -89,6 +92,8 @@ export const videoScenes: VideoScene[] = [
     end: 20.64,
     label: 'PROBLEM',
     title: 'Decisions Are Made Under Noise',
+    statements: ['Data rich.', 'Interpretation poor.', 'Resource-Constrained'],
+    preIntro: 'Exploration operates on sparse, indirect, and often conflicting observations.',
     blocks: [
       {
         body: [

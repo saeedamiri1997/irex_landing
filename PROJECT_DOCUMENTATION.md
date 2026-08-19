@@ -126,20 +126,21 @@ irex_landing/
 
 1. `<Header />`
 2. `<LineSidebar />`
-3. `<ScrollVideoScene onApply={openApply} />` — hero (pinned scroll-scrub video)
-4. `<section id="prediction">` — "From Prediction To Reasoning"
-5. `<section className="reasoning-section">` — "Generate. Test. Reject."
-6. `<section id="principle">` (manifesto) — "Every Deposit Is Individual"
-7. `<section id="transparency">` — "Designed for Auditability" (2-col SpotlightCards)
-8. `<section id="control">` — "Built for Control" (3-col SpotlightCards)
-9. `<section id="value">` — "Reduce Risk Before It Becomes Capital"
-10. `<section id="positioning">` — Positioning card with `ShapeBlur`
-11. `<section id="cgr-definition">` — CGR™ definition. **Moved here** (between positioning and apply); now a boxed card reusing the "Built for Control" `.spotlight-card` treatment (see §3.4).
-12. `<section id="apply">` (CTA) — "Early Adopter Program" with `Topography` background + `SpecularButton`
-13. `<footer className="site-footer">` — logo, tagline, LinkedIn link
-14. `<ApplyModal open={applyOpen} onClose={closeApply} />`
+3. `<ScrollVideoScene onApply={openApply} />` — hero (pinned scroll-scrub video; **now also contains** the "From Prediction To Reasoning" content as its 2nd scene panel)
+4. `<section className="reasoning-section">` — "Generate. Test. Reject."
+5. `<section id="principle">` (manifesto) — "Every Deposit Is Individual"
+6. `<section id="transparency">` — "Designed for Auditability" (2-col SpotlightCards)
+7. `<section id="control">` — "Built for Control" (3-col SpotlightCards)
+8. `<section id="value">` — "Reduce Risk Before It Becomes Capital"
+9. `<section id="positioning">` — Positioning card with `ShapeBlur`
+10. `<section id="cgr-definition">` — CGR™ definition. **Moved here** (between positioning and apply); now a boxed card reusing the "Built for Control" `.spotlight-card` treatment (see §3.4).
+11. `<section id="apply">` (CTA) — "Early Adopter Program" with `Topography` background + `SpecularButton`
+12. `<footer className="site-footer">` — logo, **tagline** (`<p className="footer-tagline">` styled coral/bold/larger), LinkedIn link
+13. `<ApplyModal open={applyOpen} onClose={closeApply} />`
 
-Section IDs referenced by the sidebar (`lib/content.ts` → `sections`), in page order: `hero`, `prediction`, `principle`, `transparency`, `control`, `value`, `positioning`, `cgr-definition`, `apply`. (The `sections` array order was updated to match the relocated CGR section.)
+> **No standalone `#prediction` section exists anymore.** The old `<section id="prediction" className="prediction-shift-section">` was **removed** because its content now lives only inside the hero scroll-video `prediction` scene (see §3.3 and §9 fix note). Consequently the `sections` array (sidebar nav) no longer contains a `prediction` entry — **option (a): the entry was removed entirely** (repointing it to `hero` would have created a duplicate sidebar item, since `hero` is already listed).
+
+Section IDs referenced by the sidebar (`lib/content.ts` → `sections`), in page order: `hero`, `principle`, `transparency`, `control`, `value`, `positioning`, `cgr-definition`, `apply`. (The `sections` array order matches the relocated CGR section, and no entry points to a nonexistent id.)
 
 > **Note on `#hero`:** the `hero` section id lives on the `<ScrollVideoScene>` root (`<section id="hero" ...>`).
 
@@ -149,14 +150,29 @@ The hero `ScrollVideoScene` now has **5 panels** (driven by `videoScenes` in `li
 1. `cgr` — "Make Better Target Decisions Before You Drill." (CTA)
 2. `prediction` — **NEW.** "From Prediction To Reasoning" (title) / "Prediction shaped the last generation of exploration." (middle line) / "Reasoning will shape the next." (middle line) / "IREX optimizes for Decision Quality, Not Prediction Accuracy" (bold coral closing statement).
 3. `first-principles` — "Ore deposits are not predictable." (CTA)
-4. `problem` — "Decisions Are Made Under Noise"
+4. `problem` — "Decisions Are Made Under Noise". Renders a pre-title intro block above the (reduced-size) title: a copper "PROBLEM" label (reuses the scene's `label` field), three large serif statements ("Data rich." / "Interpretation poor." / "Resource-Constrained"), and a smaller body line ("Exploration operates on sparse, indirect, and often conflicting observations."). Then the title, then the existing body/block content. (See §3.5.)
 5. `limitations` — "Patterns Don’t Equal Understanding"
 
 Sizing rule for the `prediction` scene: the two middle lines (2–3) render **smaller** than the closing line (4). The closing statement is coral, bold, and kept on a **single line** on desktop/tablet; on phones (≤600px) it is reduced in size and allowed to wrap gracefully so it never overflows (a documented judgment call — see §9).
 
 ### 3.4 CGR definition section (relocated + restyled)
 
-The `cgr-definition` section was moved from its original position (right after the `prediction` section) to **between `positioning` and `apply`**, and restyled as a boxed card that reuses the "Built for Control" `.spotlight-card` treatment (via the `SpotlightCard` component with `className="cgr-definition-card"`). Content lines are color-coded with the theme tokens: `--teal` (eyebrow line 1), default/muted (lines 2 & 4), `--copper` (line 3), `--coral` (line 5). A closing **footnote** ("CGR™ is the next evolution of exploration intelligence.") is styled coral, bold, and larger than the body text.
+The `cgr-definition` section was moved from its original position (right after the `prediction` section) to **between `positioning` and `apply`**, and restyled as a boxed card that reuses the "Built for Control" `.spotlight-card` treatment (via the `SpotlightCard` component with `className="cgr-definition-card"`). Content lines are color-coded with the theme tokens: `--teal` (eyebrow line 1), default/muted (lines 2 & 4), `--copper` (line 3), `--coral` (line 5).
+
+> **No footnote inside the CGR card.** The sentence "CGR™ is the next evolution of exploration intelligence." does **not** appear inside the CGR definition card. It exists **exactly once** — in the site `<footer>`, styled as `.footer-tagline` (coral, bold, slightly larger than default footer text). (Corrective fix; see §9.)
+
+### 3.5 `problem` scene intro block
+
+To add pre-title intro content to the `problem` scene, the `VideoScene` type in `lib/content.ts` gained two optional fields, rendered by `ScrollVideoScene.tsx` above the `<h1>` only when `scene.statements` is non-empty:
+
+```ts
+/** Three short punchy statements rendered above the title (large). */
+statements?: string[];
+/** Small body-style line rendered above the title, below the statements. */
+preIntro?: string;
+```
+
+Rendering order within the `problem` panel: copper `scene.label` ("PROBLEM") → three large serif `scene.statements` lines → smaller `scene.preIntro` body line → reduced-size coral title → existing body/block/bullets. The copper label reuses the scene's existing `label` field (the `eyebrow` is empty for this scene). The title was reduced (no longer the dominant huge heading) so the fuller panel stays visually balanced and consistent with the other scene panels.
 
 > **Note on `#hero`:** the `hero` section id lives on the `<ScrollVideoScene>` root (`<section id="hero" ...>`).
 
@@ -546,7 +562,13 @@ How they're consumed (`lib/email.ts`): if `EMAIL_DELIVERY_MODE === 'log'`, email
 
 13. **Sidebar `sections` array reordered:** Because the `cgr-definition` section was physically moved later in the page, the `sections` array in `lib/content.ts` (which drives the right-edge `LineSidebar` nav and its active-state tracking) was reordered to match the new DOM order. The sidebar is hidden ≤900px so this only affects desktop navigation order.
 
-14. **Branch note:** These changes are committed to `arena/01a01a99-irex-landing` (the session branch). They have **not** been merged into `main` because this environment is restricted to the session branch; merging to `main` is left to the user/CI.
+14. **Branch note (updated):** The work is developed on `arena/01a01a99-irex-landing` (the session branch) and **merged into `main`** so that `main` contains ALL changes — the original three tasks plus the corrective fixes below. (Note: the sandbox git history was reset to the initial commit at the start of the corrective round; the previous three tasks were re-committed on top before these fixes, then the branch was merged into `main`.)
+
+15. **FIX 1 — duplicate "From Prediction To Reasoning" section removed (sidebar decision):** The standalone `<section id="prediction" className="prediction-shift-section">` in `LandingPage.tsx` was **deleted** because its content now lives only in the hero `prediction` scene. The `sections` array in `lib/content.ts` (drives `LineSidebar`) no longer has a `prediction` entry — **chose option (a): removed it entirely** rather than repointing to `hero`, since repointing would have produced a duplicate sidebar item (the `hero` id already exists at the top of the array). This leaves no sidebar entry pointing to a nonexistent id, so the `IntersectionObserver` in `LineSidebar.tsx` has no dangling `document.getElementById` (no console errors). The now-orphaned `.prediction-shift-section`, `.prediction-shift-shell`, `.prediction-shift-subhead`, `.prediction-shift-emphasis` CSS rules were **removed** from `globals.css` (including their references in the shared section-selector lists and the ≤600px media query).
+
+16. **FIX 2 — footer tagline is the single location of the closing sentence:** The previously-added duplicate `<p className="cgr-footnote">` inside the CGR definition card was **removed** (along with the now-unused `.cgr-footnote` CSS rule). The sentence now appears **exactly once** on the page, in the site `<footer>`, styled with a new `.footer-tagline` class: `color: var(--coral)`, `font-weight: 700`, `font-size: 1rem` (larger than the default footer text `0.84rem`). Verified in the rendered page: the sentence count is exactly 1.
+
+17. **FIX 3 — `problem` scene intro content:** New pre-title content added to the `problem` scene (see §3.5): copper "PROBLEM" label, three large serif statements, a smaller body line, and a reduced-size title. The `VideoScene` type gained `statements?: string[]` and `preIntro?: string`. **Judgment call:** the sandbox cannot run a live browser (headless Chromium download is network-blocked), so visual verification of the tighter/larger content in the pinned panel at 375/390/768px could not be performed in a real viewport. Sizing was tuned conservatively via `clamp()` and a ≤600px mobile override to keep the panel from overflowing; if it feels cramped on very short viewports, reduce the statement `font-size` or tighten the `.scene-intro`/block spacing further.
 
 ---
 

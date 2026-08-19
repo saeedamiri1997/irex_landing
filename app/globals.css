@@ -465,9 +465,48 @@ h2 {
     white-space: pre-line;
 }
 
+/* The "problem" scene now has pre-title intro content (copper label, three
+   large statements, and a smaller body line) above the title, so the title
+   is reduced in size and no longer the dominant huge heading. */
 .scene-copy[data-scene="problem"] h1 {
     color: var(--coral);
     font-weight: 700;
+    font-size: clamp(1.25rem, 2.3vw, 2rem);
+    line-height: 1.05;
+    margin: 0.5rem 0 1rem;
+}
+
+.scene-copy[data-scene="problem"] .scene-intro {
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 1.1rem;
+}
+
+.scene-copy[data-scene="problem"] .scene-intro__label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--copper);
+    margin-bottom: 0.9rem;
+}
+
+.scene-copy[data-scene="problem"] .scene-intro__statement {
+    margin: 0;
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(1.65rem, 3vw, 2.6rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    color: var(--white);
+}
+
+.scene-copy[data-scene="problem"] .scene-intro__body {
+    margin: 0.7rem 0 0;
+    max-width: 620px;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    color: rgba(245, 247, 250, 0.76);
 }
 
 .scene-copy p,
@@ -617,7 +656,6 @@ h2 {
    ========================================================= */
 
 .reasoning-section,
-.prediction-shift-section,
 .cards-section,
 .value-section,
 .positioning-section,
@@ -632,43 +670,8 @@ h2 {
 
 
 /* =========================================================
-   PREDICTION SHIFT / CGR DEFINITION
+   CGR DEFINITION (relocated + boxed)
    ========================================================= */
-
-.prediction-shift-section {
-    min-height: 86vh;
-    display: flex;
-    align-items: center;
-}
-
-.prediction-shift-shell,
-.cgr-definition-shell {
-    max-width: 1060px;
-}
-
-.prediction-shift-shell h2,
-.cgr-definition-shell h2 {
-    font-size: clamp(3rem, 5vw, 54px);
-    line-height: 0.96;
-    margin: 0 0 1.6rem;
-}
-
-.prediction-shift-subhead {
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(2.6rem, 4.2vw, 48px);
-    line-height: 1.05;
-    margin: 0 0 3.5rem;
-    color: var(--white);
-}
-
-.prediction-shift-emphasis {
-    max-width: 920px;
-    margin: 0;
-    color: var(--coral);
-    font-size: clamp(1.35rem, 2.5vw, 2rem);
-    font-weight: 700;
-    line-height: 1.45;
-}
 
 /* Relocated CGR definition, styled as a boxed card reusing the
    "Built for Control" (.spotlight-card) treatment for consistency. */
@@ -716,12 +719,18 @@ h2 {
     color: var(--coral);
 }
 
-.cgr-footnote {
-    margin: 2.4rem 0 0;
+/* =========================================================
+   FOOTER TAGLINE
+   The single closing statement lives only in the site footer.
+   Coral, bold, and slightly larger than the default footer text.
+   ========================================================= */
+
+.site-footer .footer-tagline {
+    justify-self: center;
 
     font-family: 'DM Mono', monospace;
-    font-size: clamp(1.15rem, 1.9vw, 1.6rem);
-    line-height: 1.45;
+    font-size: 1rem;
+    line-height: 1.5;
     font-weight: 700;
 
     color: var(--coral);
@@ -1577,7 +1586,6 @@ h2 {
     }
 
     .reasoning-section,
-    .prediction-shift-section,
     .cards-section,
     .value-section,
     .positioning-section,
@@ -1600,6 +1608,22 @@ h2 {
         white-space: normal;
         font-size: 1.02rem;
         line-height: 1.5;
+    }
+
+    /* The problem scene now holds a lot of content; tighten it on small
+       screens so it fits the pinned panel without overflowing. */
+    .scene-copy[data-scene="problem"] .scene-intro {
+        gap: 0.4rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .scene-copy[data-scene="problem"] .scene-intro__statement {
+        font-size: clamp(1.35rem, 6vw, 1.75rem);
+    }
+
+    .scene-copy[data-scene="problem"] h1 {
+        font-size: 1.15rem;
+        margin: 0.3rem 0 0.8rem;
     }
 
     .spotlight-card {
