@@ -1,575 +1,310 @@
-# IREX Landing Page — Project Documentation
+# IREX Landing — Project Documentation
 
-> **Purpose of this document:** This file is written for another AI assistant (e.g. Claude) to fully understand this Next.js project without re-reviewing the codebase. It is intended to be precise, unambiguous, and self-contained. Where something could not be determined with confidence, it is explicitly marked **"Unclear — needs manual review"**.
+**Last updated:** 2026-08-24
 
-- **Repository root:** `/home/user/irex_landing`
-- **Generated on:** 2026-08-19
-- **Analysis source:** A full review of every tracked file in the repository.
+This document describes the implementation currently in this repository. It is intended to be the source of truth for a future developer or coding agent; it deliberately records behavior that is easy to misread from the visual design alone.
 
----
+## 1. What this project is
 
-## 1. Project Overview
+IREX Landing is a single-page marketing site for IREX Pty Ltd. It presents Computational Geological Reasoning™ (CGR™) as a reasoning-first approach to exploration decisions under geological uncertainty and invites visitors to apply to the Early Adopter Program.
 
-### 1.1 Purpose
+There is no login, database, CMS, analytics integration, or persistent application store in this repository. The only server-side feature is `POST /api/apply`, which verifies Cloudflare Turnstile and sends an application through Resend, or logs it in a local dry-run mode.
 
-This is a **single-page marketing / landing site** for **IREX Pty Ltd** — a mining-exploration-technology company that markets "Computational Geological Reasoning™ (CGR™)". The page explains IREX's product philosophy (decision-making under geological uncertainty, replacing "pattern matching" with "reasoning"), presents feature/value sections, and collects **Early Adopter Program** applications through a modal form wired to an email API.
+## 2. Runtime and project structure
 
-It is **not** a real product — there is no login, no database, and no persistent data store. The only server-side behaviour is a single email-delivery API route.
-
-### 1.2 Technologies and versions (exact, from `package.json` / `package-lock.json`)
-
-| Technology | Version | Role |
-|---|---|---|
-| **Next.js** | **`15.5.22`** (App Router) | React framework / server |
-| **React** | **`19.1.1`** | UI library |
-| **react-dom** | **`19.1.1`** | DOM renderer |
-| **TypeScript** | **`^5.8.3`** (strict) | Language / types |
-| **package manager** | **npm** (`package-lock.json`, lockfileVersion **3**) | Dependency manager |
-| **GSAP** | **`3.15.0`** | Scroll-triggered animation / video scrubbing |
-| **Three.js** | **`0.179.1`** | WebGL (positioning-card border effect) |
-| **OGL** | **`1.0.11`** | Lightweight WebGL (topography + specular button FX) |
-| ESLint | `^9.24.0` + `eslint-config-next` `15.5.22` | Linting |
-| Node (host requirement) | 20+ (per `HOSTING.md`) | Runtime |
-
-**Language:** The project is entirely **TypeScript** (`allowJs: false` in `tsconfig.json`). There is no standalone JavaScript source.
-
-### 1.3 Routing structure
-
-Uses the **Next.js App Router** (`app/` directory). There is **no `pages/` directory**.
-
-- `/` → `app/page.tsx` (renders `LandingPage`)
-- `/api/apply` → `app/api/apply/route.ts` (API route: `GET` health check, `POST` submit application)
-
-All non-route files are `'use client'` components. The only React Server Components are `app/layout.tsx` and `app/page.tsx`.
-
----
-
-## 2. Folder and File Structure
-
-Full tree (all tracked files; `node_modules`, `.git`, `.next`, build output excluded):
-
-```
-irex_landing/
-├── .env.example              # Environment variable template (no secrets)
-├── .gitignore                # Ignores node_modules, .next, .env*, logs, .vercel
-├── .vercelignore             # Deploy ignore list (.next, node_modules, *.log)
-├── HOSTING.md                # Self-hosting / deployment guide
-├── README.md                 # Project readme (stack, setup, media, footer)
-├── PROJECT_DOCUMENTATION.md  # THIS FILE
-│
-├── app/                      # App Router root
-│   ├── layout.tsx            # Root layout: <html>/<body>, metadata, fonts via CSS
-│   ├── page.tsx              # Home page → renders <LandingPage />
-│   ├── globals.css           # ALL styling for the site (single global stylesheet)
-│   └── api/
-│       └── apply/
-│           └── route.ts      # Email-delivery API (GET health / POST submit)
-│
-├── components/               # All UI + WebGL components (all 'use client')
-│   ├── LandingPage.tsx       # Main page composition (all sections)
-│   ├── Header.tsx            # Fixed top header (floating on scroll)
-│   ├── LineSidebar.tsx       # Right-edge section dot navigation
-│   ├── ScrollVideoScene.tsx  # HERO: scroll-scrubbed video + scene panels  ★ video
-│   ├── ApplyModal.tsx        # Early-Adopter application modal form
-│   ├── SpotlightCard.tsx     # Card with mouse-tracking spotlight
-│   ├── SpecularButton.tsx    # OGL shader animated button
-│   ├── ShapeBlur.tsx         # Three.js rounded-rect border effect
-│   ├── Topography.tsx        # OGL animated topography background
-│   └── TextPressure.tsx      # Unused hover-reactive text component (dead code)
-│
-├── lib/
-│   ├── content.ts            # Content data: sections list, narrative video URL, video scenes
-│   └── email.ts              # Email config + Resend/log sending logic
-│
-├── next.config.ts            # Next.js config
-├── tsconfig.json             # TypeScript config
-├── eslint.config.mjs         # Flat ESLint config
-├── next-env.d.ts             # Auto-generated Next types (do not edit)
-├── package.json              # Scripts + dependencies
-└── package-lock.json         # npm lockfile
-```
-
-**Where things live:**
-
-| Concern | Location |
+| Area | Implementation |
 |---|---|
-| Components | `components/` |
-| Page + API routes | `app/` |
-| All styling | `app/globals.css` (single file — no CSS Modules, no Tailwind) |
-| Content/data | `lib/content.ts` |
-| Server email logic | `lib/email.ts` |
-| Config | `next.config.ts`, `tsconfig.json`, `eslint.config.mjs` |
-| Assets / media | **None committed.** Referenced at URL paths `/media/*` and `/brand/*` but **no `public/` directory exists** (see §4). |
+| Framework | Next.js 15.5.22 App Router |
+| UI | React 19.1.1, TypeScript, strict type checking |
+| Scroll/video | GSAP 3.15.0 and ScrollTrigger |
+| WebGL | Three.js 0.179.1 for the positioning border; OGL 1.0.11 for topography and button effects |
+| Package manager | npm, lockfile version 3 |
+| Host runtime | Node.js 20 or newer |
+| Styling | One global stylesheet: `app/globals.css`; no Tailwind or CSS modules |
+| Next output | `output: 'standalone'` in the root Next config |
 
----
+The repository has both `next.config.js` and `next.config.ts`; their settings are currently equivalent. Next uses the JavaScript config in normal builds. Do not edit one without checking the other.
 
-## 3. Components
-
-### 3.1 Component inventory and responsibilities
-
-| # | Component | File | Responsibility |
-|---|---|---|---|
-| 1 | `LandingPage` | `components/LandingPage.tsx` | **Page root** (`'use client'`). Owns the modal open/close state and composes every section of the page. |
-| 2 | `Header` | `components/Header.tsx` | Fixed top bar with brand logo + "REASONING FIRST" tagline. Uses GSAP ScrollTrigger to add the `is-floating` class (pill-shaped floating header) after scrolling 80px. |
-| 3 | `LineSidebar` | `components/LineSidebar.tsx` | Right-edge vertical dot navigation. Uses `IntersectionObserver` to highlight the active section and smooth-scrolls on click. Rendered list comes from `sections` in `lib/content.ts`. Hidden ≤900px. |
-| 4 | `ScrollVideoScene` | `components/ScrollVideoScene.tsx` | **Hero video scene.** ★ See §4. Pins a full-viewport section while scroll-scrubbing a single MP4, and swaps between 5 text panels (`videoScenes`) as progress crosses each scene's time range. |
-| 5 | `SpotlightCard` | `components/SpotlightCard.tsx` | Wrapper card that tracks the mouse and sets CSS custom properties (`--mouse-x/y`, `--spotlight-color`) so a spotlight can be drawn in CSS. |
-| 6 | `SpecularButton` | `components/SpecularButton.tsx` | Reusable button whose surface is an OGL WebGL canvas (specular shine that follows the pointer). Used for all CTAs and the modal submit. |
-| 7 | `ShapeBlur` | `components/ShapeBlur.tsx` | Three.js WebGL effect: an animated rounded-rectangle border that brightens near the cursor. Used inside the Positioning card. |
-| 8 | `Topography` | `components/Topography.tsx` | OGL WebGL "topography"/contour-line background with morphing, grain, and mouse interaction. Used behind the CTA section. **Includes its own `IntersectionObserver` + `visibilitychange` pause/resume of the render loop.** |
-| 9 | `TextPressure` | `components/TextPressure.tsx` | Hover-reactive text effect (characters scale/weight-shift toward cursor). **Unused / dead code — not imported anywhere.** |
-| 10 | `ApplyModal` | `components/ApplyModal.tsx` | Early-Adopter application modal. Contains the form, ESC/backdrop close, focus management, and posts JSON to `/api/apply`. |
-
-### 3.2 Order in which they render on the page
-
-`LandingPage` renders, top-to-bottom:
-
-1. `<Header />`
-2. `<LineSidebar />`
-3. `<ScrollVideoScene onApply={openApply} />` — hero (pinned scroll-scrub video; **now also contains** the "From Prediction To Reasoning" content as its 2nd scene panel)
-4. `<section className="reasoning-section">` — "Generate. Test. Reject."
-5. `<section id="principle">` (manifesto) — "Every Deposit Is Individual"
-6. `<section id="transparency">` — "Designed for Auditability" (2-col SpotlightCards)
-7. `<section id="control">` — "Built for Control" (3-col SpotlightCards)
-8. `<section id="value">` — "Reduce Risk Before It Becomes Capital"
-9. `<section id="positioning">` — Positioning card with `ShapeBlur`
-10. `<section id="cgr-definition">` — CGR™ definition. **Moved here** (between positioning and apply); now a boxed card reusing the "Built for Control" `.spotlight-card` treatment (see §3.4).
-11. `<section id="apply">` (CTA) — "Early Adopter Program" with `Topography` background + `SpecularButton`
-12. `<footer className="site-footer">` — logo, **tagline** (`<p className="footer-tagline">` styled coral/bold/larger), LinkedIn link
-13. `<ApplyModal open={applyOpen} onClose={closeApply} />`
-
-> **No standalone `#prediction` section exists anymore.** The old `<section id="prediction" className="prediction-shift-section">` was **removed** because its content now lives only inside the hero scroll-video `prediction` scene (see §3.3 and §9 fix note). Consequently the `sections` array (sidebar nav) no longer contains a `prediction` entry — **option (a): the entry was removed entirely** (repointing it to `hero` would have created a duplicate sidebar item, since `hero` is already listed).
-
-Section IDs referenced by the sidebar (`lib/content.ts` → `sections`), in page order: `hero`, `principle`, `transparency`, `control`, `value`, `positioning`, `cgr-definition`, `apply`. (The `sections` array order matches the relocated CGR section, and no entry points to a nonexistent id.)
-
-> **Note on `#hero`:** the `hero` section id lives on the `<ScrollVideoScene>` root (`<section id="hero" ...>`).
-
-### 3.3 Hero scroll-video scene panels
-
-The hero `ScrollVideoScene` now has **5 panels** (driven by `videoScenes` in `lib/content.ts`), in order:
-1. `cgr` — "Make Better Target Decisions Before You Drill." (CTA)
-2. `prediction` — **NEW.** "From Prediction To Reasoning" (title) / "Prediction shaped the last generation of exploration." (middle line) / "Reasoning will shape the next." (middle line) / "IREX optimizes for Decision Quality, Not Prediction Accuracy" (bold coral closing statement).
-3. `first-principles` — "Ore deposits are not predictable." (CTA)
-4. `problem` — "Decisions Are Made Under Noise". Renders a pre-title intro block above the (reduced-size) title: a copper "PROBLEM" label (reuses the scene's `label` field), three large serif statements ("Data rich." / "Interpretation poor." / "Resource-Constrained"), and a smaller body line ("Exploration operates on sparse, indirect, and often conflicting observations."). Then the title, then the existing body/block content. (See §3.5.)
-5. `limitations` — "Patterns Don’t Equal Understanding"
-
-Sizing rule for the `prediction` scene: the two middle lines (2–3) render **smaller** than the closing line (4). The closing statement is coral, bold, and kept on a **single line** on desktop/tablet; on phones (≤600px) it is reduced in size and allowed to wrap gracefully so it never overflows (a documented judgment call — see §9).
-
-### 3.4 CGR definition section (relocated + restyled)
-
-The `cgr-definition` section was moved from its original position (right after the `prediction` section) to **between `positioning` and `apply`**, and restyled as a boxed card that reuses the "Built for Control" `.spotlight-card` treatment (via the `SpotlightCard` component with `className="cgr-definition-card"`). Content lines are color-coded with the theme tokens: `--teal` (eyebrow line 1), default/muted (lines 2 & 4), `--copper` (line 3), `--coral` (line 5).
-
-> **No footnote inside the CGR card.** The sentence "CGR™ is the next evolution of exploration intelligence." does **not** appear inside the CGR definition card. It exists **exactly once** — in the site `<footer>`, styled as `.footer-tagline` (coral, bold, slightly larger than default footer text). (Corrective fix; see §9.)
-
-### 3.5 `problem` scene intro block
-
-To add pre-title intro content to the `problem` scene, the `VideoScene` type in `lib/content.ts` gained two optional fields, rendered by `ScrollVideoScene.tsx` above the `<h1>` only when `scene.statements` is non-empty:
-
-```ts
-/** Three short punchy statements rendered above the title (large). */
-statements?: string[];
-/** Small body-style line rendered above the title, below the statements. */
-preIntro?: string;
+```text
+app/
+  layout.tsx                 Root metadata and global CSS
+  page.tsx                   Renders LandingPage
+  globals.css                All site, responsive, modal, WebGL and motion styles
+  api/apply/route.ts         GET health check and POST application endpoint
+components/
+  LandingPage.tsx            Page composition and modal open/close state
+  Header.tsx                 Fixed/floating logo header
+  LineSidebar.tsx            Desktop section navigation
+  ScrollVideoScene.tsx       Pinned hero video and five scene panels
+  ApplyModal.tsx             Turnstile-protected Early Adopter form
+  SmartPreloader.tsx         Short initial progress overlay
+  SpotlightCard.tsx          Mouse-position CSS card spotlight
+  SpecularButton.tsx         OGL specular button canvas
+  ShapeBlur.tsx              Three.js positioning-card border canvas
+  Topography.tsx             OGL CTA contour-line canvas
+  TextPressure.tsx           Unused hover text component; not imported
+lib/
+  content.ts                 Sidebar sections, video paths and scene copy
+  dpr.ts                     Shared matchMedia device-pixel-ratio watcher
+  email.ts                   Resend/log email configuration and delivery
+public/
+  brand/                     IREX logos
+  media/                     WebM, legacy MP4 and PNG media assets
 ```
 
-Rendering order within the `problem` panel: copper `scene.label` ("PROBLEM") → three large serif `scene.statements` lines → smaller `scene.preIntro` body line → reduced-size coral title → existing body/block/bullets. The copper label reuses the scene's existing `label` field (the `eyebrow` is empty for this scene). The title was reduced (no longer the dominant huge heading) so the fuller panel stays visually balanced and consistent with the other scene panels.
+## 3. Page composition
 
-> **Note on `#hero`:** the `hero` section id lives on the `<ScrollVideoScene>` root (`<section id="hero" ...>`).
+`components/LandingPage.tsx` renders the following in order:
 
----
+1. `SmartPreloader`
+2. `Header`
+3. `LineSidebar`
+4. `ScrollVideoScene` (`#hero`)
+5. Reasoning section (`Generate. Test. Reject.`)
+6. Principle/manifesto section (`#principle`)
+7. Transparency cards (`#transparency`)
+8. Control cards (`#control`)
+9. Economic value section (`#value`)
+10. Positioning card (`#positioning`) with `ShapeBlur`
+11. CGR definition card (`#cgr-definition`)
+12. Early Adopter CTA (`#apply`) with `Topography` and `SpecularButton`
+13. Footer
+14. `ApplyModal`, conditionally rendered from the page-level `applyOpen` state
 
-## 4. Video Details ★ (most important section)
+The sidebar section list is in `lib/content.ts`: `hero`, `principle`, `transparency`, `control`, `value`, `positioning`, `cgr-definition`, and `apply`. There is no standalone prediction section. The prediction copy is one panel inside the pinned hero.
 
-### 4.1 Which component(s) render video content
+### 3.1 Header and sidebar
 
-**Only one component renders a `<video>` element: `components/ScrollVideoScene.tsx`** (the hero). No other component in the codebase renders video.
+- `Header` uses the local `/brand/irex-logo-dark.png` asset through `next/image` and becomes a floating pill after 80px of scroll.
+- `LineSidebar` observes the section elements and scrolls to them on click.
+- The exact responsive boundary is `@media (max-width: 900px)`: the sidebar is hidden at 900px and below, and is visible at 901px and above. This is intentional, not a `min-width` approximation.
 
-### 4.2 Video file path / filename referenced in code
+### 3.2 Hero scenes
 
-Defined in `lib/content.ts`:
+`ScrollVideoScene` pins a full viewport section with:
 
-```ts
-export const narrativeVideo = '/media/irex-scroll-narrative.mp4';
-```
+- `start: 'top top'`
+- `end: '+=520%'`
+- `pin: true`
+- `scrub: 0.72`
+- `anticipatePin: 1`
+- `invalidateOnRefresh: true`
 
-Used in `components/ScrollVideoScene.tsx`:
+The five scene ranges are defined in seconds in `lib/content.ts`:
 
-```tsx
-<video
-  ref={videoRef}
-  src={narrativeVideo}   // === '/media/irex-scroll-narrative.mp4'
-  muted
-  playsInline
-  preload="auto"
-  onLoadedMetadata={() => setReady(true)}
-  onLoadedData={() => setReady(true)}
-  onCanPlayThrough={() => setReady(true)}
-  className={ready ? 'is-ready' : ''}
-/>
-```
+| Scene | Range | Purpose |
+|---|---:|---|
+| `cgr` | 0–3.23 | Hero target-decision statement and CTA |
+| `prediction` | 3.23–8.07 | Move from prediction to reasoning |
+| `first-principles` | 8.07–14.46 | Noisy footprints, invariants, and CGR principle |
+| `problem` | 14.46–20.64 | Data-rich/interpretation-poor problem and consequences |
+| `limitations` | 20.64–25.00 | Why patterns do not equal understanding |
 
-The absolute video URL path is **`/media/irex-scroll-narrative.mp4`**.
+The text panels are stacked in one grid cell and activated by the ScrollTrigger progress. The video loop is always scheduled while the component is mounted, but actual `currentTime` assignments are throttled to at most 30 per second and skipped when the target has moved less than 0.04 seconds. This reduces expensive media seeks while preserving scroll-following behavior.
 
-### 4.3 Are the video files committed to git? Where are they served from?
+## 4. Media and static assets
 
-**The video file is NOT committed to the git repository.**
+All current media is checked into `public`, so a deployment must include that directory. The files used by the current hero are:
 
-- `git ls-files` shows **no `public/` directory at all** and **no media/video/brand asset files** are tracked.
-- There is **no `public/` folder and no `media/` folder** anywhere in the working tree.
-- The video is referenced by the root-relative URL `/media/irex-scroll-narrative.mp4`.
+- `/media/irex-scroll-narrative.webm`: desktop WebM, approximately 25.01 seconds, 12,967,827 bytes (~12.97 MB), approximately 4.15 Mbps.
+- `/media/irex-scroll-narrative-mobile.webm`: mobile WebM, approximately 25.01 seconds, 10,538,527 bytes (~10.54 MB), approximately 3.37 Mbps.
 
-This means the video (and the `/brand/*` logo images, and the `/media/frame-05-layers.png` OG image — see §4.6) must be **served from somewhere outside the repo**: an external CDN / object storage / reverse-proxy static file server that maps the `/media/*` (and `/brand/*`) URL namespace to the files.
+`lib/content.ts` exports those paths as `narrativeVideo` and `narrativeMobileVideo`. The `<video>` in `ScrollVideoScene` lists the mobile source first with `media="(max-width: 600px)"`, then the desktop source as the fallback. The mobile selection boundary is therefore 600px CSS width, inclusive for the media query.
 
-Evidence that this is expected at runtime:
-- `next.config.ts` defines a `Cache-Control` header specifically for the `/media/:path*` route (`public, max-age=31536000, immutable`) — i.e. the site expects long-lived CDN-cacheable media under `/media/`.
-- `app/layout.tsx` sets the OpenGraph image to `/media/frame-05-layers.png`.
-- The README describes the media as optimized MP4s.
+The following files are also present in `public/media` but are not referenced by the current hero component:
 
-**Exact serving location is Unclear — needs manual review.** It is not derivable from the committed code alone. The deployment (per `HOSTING.md`) is a plain Node/Next host (or Vercel — see §8), so the `/media/*` and `/brand/*` assets are either (a) expected to be dropped into a `public/` folder at deploy time, or (b) served by an external CDN/static host configured out-of-band. Neither the exact URL origin nor how `/media/*` is mapped is present in the repo.
+- `01-rocks-to-topography.mp4`
+- `02-topography-to-cross-section.mp4`
+- `03-cross-section-to-diorama.mp4`
+- `04-diorama-to-layers.mp4`
+- `frame-01-rocks.png` through `frame-05-layers.png`
 
-### 4.4 Lazy-loading approach for the video
+`frame-05-layers.png` is used as the Open Graph image in `app/layout.tsx`. The page does not request `/media/irex-scroll-narrative.mp4`; that path is obsolete and should not be restored in documentation or deployment rules.
 
-There is **no true lazy-loading library or mechanism** applied to the video. Specifically:
+The active media response header is configured by the root Next config for `/media/:path*` as `public, max-age=31536000, immutable`. Change filenames when replacing immutable media.
 
-- ❌ No `next/dynamic`
-- ❌ No `loading="lazy"` attribute on the `<video>` element
-- ❌ No `IntersectionObserver` on the video (the only `IntersectionObserver`s in the codebase are in `LineSidebar.tsx` and `Topography.tsx` — neither concerns the video)
-- ❌ No third-party lazy-load package (e.g. no `lazysizes`, no `react-lazyload`)
+## 5. WebGL and animation lifecycle
 
-What actually exists is a **"readiness-gated" scroll-scrub**, not lazy loading. The exact mechanisms, quoted from `components/ScrollVideoScene.tsx`:
+The page has three reusable WebGL effects and one scroll/video animation. They are intentionally client-only and clean up their observers, event listeners, animation frames, canvases, and contexts on unmount.
 
-1. **Eager preload + opacity fade-in gated on readiness** (the video is in the hero, i.e. above the fold, so it is requested eagerly):
+### 5.1 Visibility and page-visibility gating
 
-```tsx
-const [ready, setReady] = useState(false);
-...
-<video
-  ref={videoRef}
-  src={narrativeVideo}
-  muted
-  playsInline
-  preload="auto"
-  onLoadedMetadata={() => setReady(true)}
-  onLoadedData={() => setReady(true)}
-  onCanPlayThrough={() => setReady(true)}
-  className={ready ? 'is-ready' : ''}
-/>
-```
+- `ShapeBlur` starts its Three.js render loop only while its element intersects the viewport and `document.hidden` is false.
+- Every `SpecularButton` instance (hero CTAs and form submit) has the same `IntersectionObserver` plus `visibilitychange` gating. Off-screen buttons do not render continuously.
+- `Topography` already used the same gating pattern and continues to do so for the CTA background.
+- A hidden page cancels the active frame in all three effects. Returning to the page starts it again only if the element is still visible.
 
-The `<video>` starts with `opacity: 0` (CSS `.scene-media video { opacity: 0; transition: opacity .35s ease; }`) and only fades in once a `ready` state is reached (any of loadedmetadata/loadeddata/canplaythrough), via `.scene-media video.is-ready { opacity: 1; }`.
+Pointer listeners still update lightweight target state where needed, but they do not force a render while an effect is gated.
 
-2. **Scroll-scrub `requestAnimationFrame` loop that only seeks once the video is playable:**
+### 5.2 Dynamic DPR handling
 
-```ts
-const scrubToScroll = () => {
-  const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : NARRATIVE_DURATION;
-  const targetTime = gsap.utils.clamp(0, duration, targetProgress * duration);
+`lib/dpr.ts` exposes `watchDevicePixelRatio`, which subscribes to a resolution `matchMedia` query and re-subscribes after each change. `ShapeBlur`, `Topography`, and `SpecularButton` use it. Each recalculates its backing buffer/uniforms and caps the effective DPR at 2. This matters when a browser window moves between displays or an emulated device scale factor changes after mount.
 
-  if (readyRef.current && video.readyState >= 2 && Math.abs(targetTime - video.currentTime) > 0.018) {
-    video.currentTime = targetTime;
-  }
+### 5.3 SmartPreloader
 
-  raf = requestAnimationFrame(scrubToScroll);
-};
-```
+`SmartPreloader` shows a progress overlay and temporarily sets `document.body.style.overflow = 'hidden'`. The current timing is:
 
-3. **GSAP `ScrollTrigger` that pins the section and drives `targetProgress`:**
+- start delay: 80ms
+- progress reveal: 650ms
+- exit delay: 80ms
+- exit transition: 360ms
 
-```ts
-ScrollTrigger.create({
-  trigger: section,
-  start: 'top top',
-  end: '+=520%',
-  pin: true,
-  scrub: 0.72,
-  anticipatePin: 1,
-  invalidateOnRefresh: true,
-  onUpdate: (self) => {
-    targetProgress = self.progress;
-    // ... computes active scene index and calls setActiveIndex(...)
-  },
-});
-```
+The theoretical maximum initial scroll-lock duration is therefore about 1.17 seconds, rather than the former roughly 2.5 seconds. The original body overflow value is restored on completion and cleanup.
 
-4. **Reduced-motion fallback** in `app/globals.css` hides the video entirely for users with reduced-motion preference:
+### 5.4 Reduced motion
 
-```css
-@media (prefers-reduced-motion: reduce) {
-  .scene-media video {
-    display: none;
-  }
-}
-```
+For `prefers-reduced-motion: reduce`, smooth scrolling is disabled, transitions are removed for the primary animated elements, the hero is no longer pinned, and the hero video is hidden. The scene copy remains available as text.
 
-> **Conclusion for the next developer:** there is no lazy-loading implementation for the video today. The video is loaded eagerly (`preload="auto"`) on page load and simply not shown until ready. This matches the stated goal that "the current lazy loading implementation exists but needs improvement/changes" in the sense that the existing mechanism is a readiness fade-in rather than a true deferral; if deferred loading is desired, it must be added (e.g. native `loading="lazy"`, an `IntersectionObserver` that sets `preload`/`src` only when the section approaches the viewport, or `next/dynamic`).
+## 6. Responsive behavior and overflow decisions
 
-### 4.5 Video file format and size
+The base stylesheet still has `body { overflow-x: hidden; }` as a defensive guard, but the layout fixes are intended to prevent content from being wider than the document:
 
-**Format:** The README states the scroll-scrub video is an **H.264 MP4** optimized with **frequent keyframes** and the **`faststart`** flag (moov atom moved to the front so it can begin playing before full download). The codebase references one file, `/media/irex-scroll-narrative.mp4`.
+- At widths up to 900px, the reasoning heading, value outcome lines, and problem-scene statement are explicitly allowed to wrap instead of inheriting desktop `nowrap` behavior.
+- On mobile, `.scene-copy` and `.video-scene--right .scene-copy` use `margin: 0` and `width: 100%`; the earlier extra width/margin calculation is removed.
+- The problem statement can wrap at tablet/mobile widths.
+- The mobile video uses `object-fit: cover`, preserving the source aspect ratio rather than stretching with `fill`. The base video rule is also `cover`.
+- The prediction closing line remains `nowrap` on desktop/tablet but is intentionally allowed to wrap at 600px and below because a readable single line is not possible on a phone.
 
-**Size / exact bitrate / exact dimensions:** **Unclear — needs manual review.** The actual file is not in the repo, so its byte size, resolution, and bitrate cannot be determined from the code.
+The exact viewport matrix used for overflow checks is 375×812, 390×844, 600×900, 720×900, 768×1024, and 900×900. The intended invariant at each size is `document.documentElement.scrollWidth <= window.innerWidth` and no horizontal scrollbar.
 
-**Duration:** The scrub is driven by a hard-coded `NARRATIVE_DURATION = 25` (seconds) in `ScrollVideoScene.tsx`:
+### 6.1 ApplyModal scrolling/spacing decision
 
-```ts
-const NARRATIVE_DURATION = 25;
-```
+The modal intentionally uses a bounded, internally scrollable panel rather than allowing the page behind it to scroll:
 
-The five `videoScenes` map onto this 25 s timeline with these start/end seconds (`lib/content.ts`):
+- Opening the modal locks body scrolling and restores the previous body overflow value on close.
+- `.apply-modal` has a viewport-relative `max-height` and `overflow: auto` with `overscroll-behavior: contain`.
+- The backdrop itself can scroll if a browser viewport or virtual keyboard leaves less space than expected.
+- At widths up to 600px the backdrop has a 12px gutter, the panel uses 30px top/34px bottom and 28px side padding, and `100dvh` is used where supported.
+- This keeps the close control and all fields reachable without making the main page jump. The form becomes one column at the tablet breakpoint.
 
-| Scene id | Start (s) | End (s) | Duration (s) |
-|---|---|---|---|
-| `cgr` (hero) | 0 | 3.23 | 3.23 |
-| `prediction` (NEW) | 3.23 | 8.07 | 4.84 |
-| `first-principles` | 8.07 | 14.46 | 6.39 |
-| `problem` | 14.46 | 20.64 | 6.18 |
-| `limitations` | 20.64 | 25 | 4.36 |
+## 7. Application form and API
 
-> **Time redistribution (documented approach):** `NARRATIVE_DURATION` stays `25` and the ScrollTrigger `end: '+=520%'` is unchanged. The new scene was inserted second, and the five scenes were re-distributed **proportionally** across the same 25 s timeline: each original scene kept its relative weight (cgr=4, first-principles=7.92, problem=7.66, limitations=5.42) and the new scene was given a weight of 6 (a comfortable middle presence for its four lines of text), then all weights were scaled by `25 / (4+6+7.92+7.66+5.42) = 25/31` and converted to cumulative start/end seconds (rounded to 2 decimals). This preserves the original scroll pacing feel.
+### 7.1 Client behavior (`ApplyModal.tsx`)
 
-**Discrepancy to note:** The README says *"The four scroll-scrub videos are H.264 MP4 files"* (plural). The code, however, references **one single video file** (`/media/irex-scroll-narrative.mp4`) that is scrubbed across all the scenes. Either (a) the README is loosely worded and there is really one 25 s narrative MP4, or (b) there were originally separate files and the implementation was consolidated to one. As the committed code stands, **only one video URL is referenced.** This wording discrepancy is marked here for manual review.
+The modal explicitly loads Cloudflare's Turnstile script with `?render=explicit` and renders one widget when the modal opens. It tracks:
 
-### 4.6 Poster image / fallback / autoplay / muted settings
+- widget load and render failures;
+- a completed token;
+- expired tokens;
+- Turnstile error callbacks;
+- a retry/reset action;
+- sending, success, server error, rate-limit, configuration, and network states.
 
-- **`poster` attribute:** **None.** The `<video>` element does **not** set a `poster` attribute. (There is a `frame-05-layers.png` referenced as the OpenGraph image in `app/layout.tsx` at `/media/frame-05-layers.png` — i.e. a frame still is referenced for social sharing — but it is **not** wired as a `<video poster>` and not committed to the repo.)
-- **`muted`:** Yes — `<video muted playsInline>`.
-- **`playsInline`:** Yes.
-- **`autoplay`:** **No** `autoplay` attribute. Playback is not automatic; the video is scrubbed to `video.currentTime` by the rAF loop driven by scroll progress (see §4.4). The user is expected to scroll.
-- **`controls`:** No.
-- **`loop`:** No.
-- **Fallback / static frame:** There is no per-scene static image fallback in the committed code. The only "fallbacks" are (a) the dark `#0a1118` background of `.scene-media`, (b) the fade-in gating on readiness, and (c) the reduced-motion CSS that hides the video (`.scene-media video { display: none; }`).
-- **Note:** The README claims "Each scene also has a static start/end frame for loading and reduced-motion fallbacks." **No such per-scene static-frame mechanism is present in the committed code** — no poster attribute, no `<img>` fallback layer, and no start/end-frame markup. Only the `frame-05-layers.png` OpenGraph image is referenced. This README statement appears inconsistent with the code as committed and is marked **Unclear — needs manual review**.
+The client refuses to submit without a current Turnstile token and sends it as `cf-turnstile-response`. Error messages are placed in an alert region; the widget status is announced through a live status element.
 
----
+When `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is absent in a non-production local build, the component uses Cloudflare's public test site key. A production build does not use that fallback and reports that the security check is not configured.
 
-## 5. Styling
+### 7.2 Server behavior (`app/api/apply/route.ts`)
 
-### 5.1 Approach
+The route uses the Node.js runtime and `force-dynamic`.
 
-**Plain global CSS** via a single stylesheet: `app/globals.css` (1571 lines), imported once in `app/layout.tsx`. There is **no Tailwind, no CSS Modules, no styled-components, no Sass, no CSS-in-JS**. Styling is class-name based (BEM-ish `block__element` naming), imported globally.
+`GET /api/apply` returns configuration health without secret values:
 
-### 5.2 Fonts
+- `mode`
+- `configured`
+- `toConfigured`
+- `fromConfigured`
+- `missing`
+- `turnstileConfigured`
 
-Google Fonts are imported at the top of `globals.css` via `@import`:
+`POST /api/apply` performs these steps:
 
-```css
-@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
-```
+1. Identify the client from the first `x-forwarded-for` value, or `unknown`.
+2. Apply a process-local limit of five POST attempts per IP per 60 seconds. The sixth attempt returns HTTP 429.
+3. Parse JSON; invalid JSON returns HTTP 400.
+4. If `website` is non-empty, return fake success `{ "ok": true }` without Turnstile or email delivery. This is the honeypot path.
+5. Verify `cf-turnstile-response` against Cloudflare's siteverify endpoint.
+6. Validate required fields and length limits:
+   - `name`: required, max 120 characters;
+   - `company`: required, max 160 characters;
+   - `email`: required, basic email pattern, max 180 characters;
+   - `message`: optional, max 3,000 characters.
+7. Call `sendApplicationEmail`.
 
-- `DM Mono` (monospace) — default body font (`font-family: 'DM Mono', monospace`).
-- `Instrument Serif` (serif) — used for headings (`.section-title, h1, h2`).
+Expected error status codes are 400 for malformed fields/security tokens, 429 for the limiter, 503 when Resend configuration is incomplete, and 502 for an upstream Resend failure. The limiter is deliberately in memory and per process; a multi-instance deployment needs a shared limiter for global enforcement.
 
-### 5.3 Theme / design tokens
+In development, if `TURNSTILE_SECRET_KEY` is absent, the route can use Cloudflare's public test secret. In production there is no secret fallback: `TURNSTILE_SECRET_KEY` must be provided by the host.
 
-Defined as CSS custom properties in `:root` in `globals.css`:
+### 7.3 Email delivery (`lib/email.ts`)
 
-```css
-:root {
-    --navy: #1B2430;
-    --white: #F5F7FA;
-    --teal: #00B8C4;
-    --copper: #C97A32;
-    --coral: #FF5860;
-    --muted: rgba(245, 247, 250, 0.66);
-    --hair: rgba(245, 247, 250, 0.10);
-}
-```
-
-Key structural/visual features in the CSS:
-- **Dark navy theme** throughout (`--navy` background on `html`/`body`).
-- **Responsive breakpoints:** `@media (max-width: 900px)` (tablet) and `@media (max-width: 600px)` (mobile).
-- **Reduced motion:** `@media (prefers-reduced-motion: reduce)` disables transitions and hides the video (see §4.6).
-- WebGL canvases (SpecularButton, ShapeBlur, Topography) are sized/styled via their own component code + supporting CSS classes.
-
-### 5.4 Related theme/config files
-
-There is **no separate theme file** (no `tailwind.config`, no `theme.ts`). All theming lives inside `app/globals.css`. The only styling-related config is the base `tsconfig.json`/`eslint.config.mjs` and the `next.config.ts`.
-
----
-
-## 6. Environment Variables and Config
-
-### 6.1 `next.config.ts` (full content)
-
-```ts
-import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
-  reactStrictMode: true,
-
-  output: 'standalone',
-  async headers() {
-    return [
-      {
-        source: '/media/:path*',
-        headers: [
-          { key: 'Cache-Control', value: 'public, max-age=31536000, immutable' },
-        ],
-      },
-    ];
-  },
-};
-
-export default nextConfig;
-```
-
-Settings and their meaning:
-
-| Setting | Meaning |
-|---|---|
-| `reactStrictMode: true` | Enables React Strict Mode (double-rendering in dev; surfaces bugs). |
-| `output: 'standalone'` | Builds a self-contained Node server in `.next/standalone` for easy deployment to a plain Node host (no full Next/Node image needed). |
-| `async headers()` | Adds an **immutable, cache-for-1-year** `Cache-Control` header to every response path matching `/media/*` (i.e. `public, max-age=31536000, immutable`). Intended so CDN-cached media under `/media/` never revalidates. |
-
-> **No `images` config / no `remotePatterns`:** The site uses `next/image` for the header logo with a local path `/brand/irex-logo-dark.png` (which is **not present in the repo**). Because there is no `images` block in `next.config.ts` and the path is root-relative (not a remote host), `next/image` will try to serve it from the local `public/` — but `public/` does not exist. This will 404 unless `/brand/*` is mapped by the external static server/CDN. **Marked Unclear — needs manual review.**
-
-### 6.2 `.env.example` (full content — no sensitive values)
-
-```dotenv
-RESEND_API_KEY=
-APPLICATION_EMAIL=alipourmohammadi90@gmail.com
-RESEND_FROM_EMAIL=IREX Applications <onboarding@resend.dev>
-EMAIL_DELIVERY_MODE=resend
-```
-
-| Variable | Purpose |
-|---|---|
-| `RESEND_API_KEY` | Resend API key for sending email (left **empty** in the example). |
-| `APPLICATION_EMAIL` | Recipient address for submitted applications (default: `alipourmohammadi90@gmail.com`). |
-| `RESEND_FROM_EMAIL` | Sender address/name used on outgoing emails (default: `IREX Applications <onboarding@resend.dev>`). |
-| `EMAIL_DELIVERY_MODE` | `resend` (default) sends via the Resend API; `log` enables a dry-run mode that logs to console instead of sending. |
-
-How they're consumed (`lib/email.ts`): if `EMAIL_DELIVERY_MODE === 'log'`, emails are only logged; otherwise the Resend REST API (`POST https://api.resend.com/emails`) is called with the `RESEND_API_KEY`. `APPLICATION_EMAIL`/`RESEND_FROM_EMAIL` fall back to the defaults above if unset. `getEmailHealth()` reports which required vars are missing.
-
----
-
-## 7. Dependencies
-
-### 7.1 `package.json` (full content)
+`EMAIL_DELIVERY_MODE=log` is the local/dry-run path. It prints the recipient, sender, reply-to, subject, and text payload with `console.info` and returns:
 
 ```json
-{
-  "name": "irex-landing",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "gsap": "3.15.0",
-    "next": "15.5.22",
-    "ogl": "1.0.11",
-    "react": "19.1.1",
-    "react-dom": "19.1.1",
-    "three": "0.179.1"
-  },
-  "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
-    "@types/node": "^22.14.0",
-    "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "@types/three": "^0.179.0",
-    "eslint": "^9.24.0",
-    "eslint-config-next": "15.5.22",
-    "typescript": "^5.8.3"
-  }
-}
+{ "ok": true, "mode": "log", "id": "dry-run" }
 ```
 
-### 7.2 Dependencies — explanations
+It does not call Resend and does not require recipient/sender values. The production path is Resend mode and requires all three server-side email variables:
 
-**Runtime dependencies:**
-- `next` (`15.5.22`) — Next.js framework (App Router).
-- `react` / `react-dom` (`19.1.1`) — React runtime.
-- `gsap` (`3.15.0`) — GreenSock Animation Platform; used with `ScrollTrigger` for the pinned video-scrub scene and the header float behaviour. Also provides `gsap.utils.clamp`.
-- `ogl` (`1.0.11`) — Minimal WebGL library; used for the `Topography` CTA background and the `SpecularButton` surface shaders (WebGL2).
-- `three` (`0.179.1`) — Three.js; used in `ShapeBlur` for the positioning-card rounded-rect WebGL border effect.
+- `RESEND_API_KEY`
+- `APPLICATION_EMAIL`
+- `RESEND_FROM_EMAIL`
 
-**Dev dependencies:**
-- `@eslint/eslintrc` (`^3.3.1`) — Provides `FlatCompat`, used in `eslint.config.mjs` to bridge the old `.eslintrc`-style `next` configs into ESLint 9 flat config.
-- `@types/node` (`^22.14.0`) — Node type definitions (for server code / config files).
-- `@types/react` / `@types/react-dom` (`^19.1.0`) — React type definitions.
-- `@types/three` (`^0.179.0`) — Three.js type definitions.
-- `eslint` (`^9.24.0`) — Linter (flat config).
-- `eslint-config-next` (`15.5.22`) — Next.js ESLint config (`next/core-web-vitals`, `next/typescript`).
-- `typescript` (`^5.8.3`) — TypeScript compiler.
+There are no production fallback email addresses or API keys in the sender. Missing any of those values returns `Email service is not configured`, which the route maps to HTTP 503. The email includes escaped HTML and a plain-text version, with the applicant's email in `reply_to`.
 
-> Note: `gsap`, `ogl`, and `three` are bundled client-side; they ship to the browser. No SSR-heavy cost applies since all consuming components are `'use client'`.
+## 8. Environment and deployment
 
----
+Copy `.env.example` to `.env.local` for local work. The local template selects log mode and contains Cloudflare test credentials. The test credentials are not production credentials.
 
-## 8. Build and Deploy
+Production must set:
 
-### 8.1 Scripts (`package.json`)
+```env
+EMAIL_DELIVERY_MODE=resend
+RESEND_API_KEY=real_resend_api_key
+APPLICATION_EMAIL=real_recipient_address
+RESEND_FROM_EMAIL=IREX Applications <verified-sender@example.com>
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=real_public_site_key
+TURNSTILE_SECRET_KEY=real_secret_key
+```
 
-| Script | Command | Purpose |
-|---|---|---|
-| `dev` | `next dev --turbopack` | Local dev server using the **Turbopack** bundler. |
-| `build` | `next build` | Production build. |
-| `start` | `next start` | Serve the production build (Node host). |
-| `lint` | `next lint` | Run ESLint. |
+`APPLICATION_EMAIL` and `RESEND_FROM_EMAIL` are supplied by hosting and the Resend account; they must not be invented in code. The Resend sender/domain must be verified, and the Turnstile site key must allow the real domain. See `HOSTING.md` for the standalone build command, asset copying, health check, and operator-level production verification.
 
-### 8.2 Deployment platform
+For a conventional standalone Node deployment:
 
-**Primarily a plain Node.js host** (per `HOSTING.md`): Node 20+, `npm ci && npm run build && npm run start` (default port `3000`, configurable via `PORT`). `next.config.ts` sets `output: 'standalone'`, which produces a self-contained server for such hosts.
+```bash
+npm ci
+npm run build
+cp -R public .next/standalone/public
+cp -R .next/static .next/standalone/.next/static
+PORT=3000 node .next/standalone/server.js
+```
 
-**Vercel** is also strongly implied:
-- `.vercelignore` exists (ignore list: `.next`, `node_modules`, `*.log`).
-- `.gitignore` ignores `.vercel/`.
-- The `next` version and App Router structure are Vercel-compatible.
+The exact live hosting provider and domain are not recorded in this repository. Consequently, production Turnstile hostname validation, Resend sender verification, and actual mailbox delivery cannot be claimed as verified from local tests.
 
-> The exact production platform (plain Node vs. Vercel vs. another CDN-fronted host) is **Unclear — needs manual review**. Either way, note that `/media/*` and `/brand/*` assets must be available to the deployment (see §4.3).
+## 9. Verification record
 
-### 8.3 Hosting notes (from `HOSTING.md`)
+### 9.1 Build and static checks
 
-- Requires Node.js 20+ and a Resend API key.
-- Required env vars on the host: `EMAIL_DELIVERY_MODE`, `RESEND_API_KEY`, `APPLICATION_EMAIL`, `RESEND_FROM_EMAIL`.
-- Health check: `GET /api/apply` returns JSON such as `{ "mode": "resend", "configured": true }`.
-- For a production domain, `RESEND_FROM_EMAIL` should be a verified Resend sender.
+The current production build and lint command complete successfully:
 
----
+```bash
+npm run build
+npm run lint
+```
 
-## 9. Known Issues / Notes for the Next Developer
+The build/lint output contains the existing `@next/next/no-img-element` warning for `components/LandingPage.tsx:185` and the existing missing `metadataBase` warning from Next metadata handling. Neither is a build failure.
 
-1. **Video files are large and are NOT committed to the repo.** There is no `public/` folder and no tracked media. The video `/media/irex-scroll-narrative.mp4` (plus `/brand/*` logos and `/media/frame-05-layers.png`) must be served from outside the repo (CDN / external static host / injected into `public/` at deploy time). **The exact external origin is not determinable from the code — confirm where media is served from before relying on video playback in a deployed environment.**
+`npm ci` has also completed successfully from the lockfile.
 
-2. **No real lazy-loading for the video exists yet.** The video is loaded eagerly with `preload="auto"` and merely gated behind a readiness fade-in; there is no `loading="lazy"`, no `IntersectionObserver`, and no `next/dynamic` on the video. If deferred loading is required, it must be implemented. (See full analysis in §4.4.)
+### 9.2 Local application delivery check
 
-3. **The README wording is inconsistent with the code:**
-   - README says *"four scroll-scrub videos"* but the code references **one** file, `/media/irex-scroll-narrative.mp4`, scrubbed across four scenes. Confirm whether this is one 25 s video or should be four.
-   - README says *"Each scene also has a static start/end frame for loading and reduced-motion fallbacks"* but **no such per-scene frame/poster mechanism exists in the committed code** (no `poster` attribute, no per-scene static image). Only `frame-05-layers.png` is referenced, as the OpenGraph image only.
+The actual `lib/email.ts` function and the actual API handler have been exercised locally with `EMAIL_DELIVERY_MODE=log`. A mocked Turnstile siteverify response was used only to isolate the email dry-run path; the test returned HTTP 200 with `mode: "log"` and `id: "dry-run"`, and the server emitted the application payload to the console. This is not a production Turnstile or email-delivery verification.
 
-4. **`next/image` will 404 for the header logo unless `/brand/*` is served externally.** `Header.tsx` uses `<Image src="/brand/irex-logo-dark.png" ...>` with no `images` config and no `public/` folder. The logo must be provided by the external static serving setup or dropped into `public/brand/`.
+### 9.3 Performance and browser checks
 
-5. **Dead code:** `components/TextPressure.tsx` is a complete, working component but is **not imported or used anywhere**. It can be deleted or wired up.
+The investigation baseline recorded before these fixes was:
 
-6. **No true lazy-loading for WebGL canvases either (mostly):** `ShapeBlur` runs a continuous `requestAnimationFrame` render loop with no visibility gating; `Topography` does pause/resume via `IntersectionObserver` + `document.visibilitychange`; `SpecularButton` runs a continuous rAF loop. On low-power devices these are worth auditing for performance, though the CTA is near the bottom of the page.
+- Lighthouse mobile: 81/100, LCP 2.8s, TBT 510ms, 7.69 MB transfer.
+- Lighthouse desktop: 99/100, LCP 0.6s, TBT 30ms, 9.79 MB transfer.
+- Hero scroll jank near 1,000 CSS px/s: 24 frame gaps above 50ms at 375px and 31 at 768px.
+- Before layout fixes, representative `scrollWidth` values were 406px at 375/390 and 831px at 720/768 while body overflow masking hid the defects.
 
-7. **Email delivery requires configuration.** With `EMAIL_DELIVERY_MODE=resend` and no `RESEND_API_KEY`, the API returns HTTP `503`. Use `EMAIL_DELIVERY_MODE=log` for local dry-runs.
+Post-fix browser/device-emulation, Lighthouse, and overflow results should be recorded here after running the current production server. A live production submission can only be recorded when valid production Turnstile/email credentials and domain access are available; local log mode must remain clearly separate from that result.
 
-8. **`reactStrictMode: true`** is enabled — in development, effects run twice, which matters for the WebGL/GSAP cleanup paths (they are implemented with proper teardowns, but worth keeping in mind when debugging).
+## 10. Editing guidance
 
-9. **Reduced-motion handling:** with `prefers-reduced-motion: reduce`, the hero video is hidden (`display: none`) and the section is no longer pinned (height becomes auto). Ensure the hero text remains readable without the video in that case.
-
-10. **API route specifics:** `/api/apply` (`app/api/apply/route.ts`) enforces a per-IP rate limit (max 5 POSTs / 60 s, keyed by `x-forwarded-for`), validates field lengths, and uses a hidden "website" honeypot field for spam (a non-empty value returns a fake `{ ok: true }`). It is `force-dynamic` and Node runtime. `GET /api/apply` returns email-config health.
-
-11. **CTA fix — judgment call (no live browser available):** The CTA button (`id="apply"` → `SpecularButton onClick={openApply}`) was reported as not opening `ApplyModal`. Code review showed the `onClick` handler IS correctly forwarded through `SpecularButton` (`...props` spread onto the `<button>`), and the modal logic (`applyOpen` state) is correct. Because this sandbox could not run a real browser (headless Chromium download is network-blocked), the failure could **not** be reproduced live. The reported symptom and the hint in the task pointed to the full-bleed `Topography` WebGL canvas layer overlapping the button and intercepting pointer events. Fix applied: `pointer-events: none` on `.cta-topography-layer` (and `pointer-events: auto` reaffirmed on `.cta-content`, which already had `z-index: 2`). This guarantees the decorative WebGL background can never block the button on desktop or touch. **If the CTA still fails after this change, re-open this issue and test in a real browser** — the wiring itself is correct.
-
-12. **Hero `prediction` scene closing line — judgment call on mobile wrapping:** The requirement was for "IREX optimizes for Decision Quality, Not Prediction Accuracy" to stay on a single line without wrapping. On desktop/tablet (≥601px) it is kept on one line via `white-space: nowrap` with a responsive `clamp()` font-size tuned so it fits the 720px scene container. On phones (≤600px) the 60-char monospace line cannot fit one line at a readable size (it would need ~9px text), so it is reduced and allowed to wrap gracefully instead of overflowing — this is a deliberate trade-off for legibility and no-overflow on small screens.
-
-13. **Sidebar `sections` array reordered:** Because the `cgr-definition` section was physically moved later in the page, the `sections` array in `lib/content.ts` (which drives the right-edge `LineSidebar` nav and its active-state tracking) was reordered to match the new DOM order. The sidebar is hidden ≤900px so this only affects desktop navigation order.
-
-14. **Branch note (updated):** The work is developed on `arena/01a01a99-irex-landing` (the session branch) and **merged into `main`** so that `main` contains ALL changes — the original three tasks plus the corrective fixes below. (Note: the sandbox git history was reset to the initial commit at the start of the corrective round; the previous three tasks were re-committed on top before these fixes, then the branch was merged into `main`.)
-
-15. **FIX 1 — duplicate "From Prediction To Reasoning" section removed (sidebar decision):** The standalone `<section id="prediction" className="prediction-shift-section">` in `LandingPage.tsx` was **deleted** because its content now lives only in the hero `prediction` scene. The `sections` array in `lib/content.ts` (drives `LineSidebar`) no longer has a `prediction` entry — **chose option (a): removed it entirely** rather than repointing to `hero`, since repointing would have produced a duplicate sidebar item (the `hero` id already exists at the top of the array). This leaves no sidebar entry pointing to a nonexistent id, so the `IntersectionObserver` in `LineSidebar.tsx` has no dangling `document.getElementById` (no console errors). The now-orphaned `.prediction-shift-section`, `.prediction-shift-shell`, `.prediction-shift-subhead`, `.prediction-shift-emphasis` CSS rules were **removed** from `globals.css` (including their references in the shared section-selector lists and the ≤600px media query).
-
-16. **FIX 2 — footer tagline is the single location of the closing sentence:** The previously-added duplicate `<p className="cgr-footnote">` inside the CGR definition card was **removed** (along with the now-unused `.cgr-footnote` CSS rule). The sentence now appears **exactly once** on the page, in the site `<footer>`, styled with a new `.footer-tagline` class: `color: var(--coral)`, `font-weight: 700`, `font-size: 1rem` (larger than the default footer text `0.84rem`). Verified in the rendered page: the sentence count is exactly 1.
-
-17. **FIX 3 — `problem` scene intro content:** New pre-title content added to the `problem` scene (see §3.5): copper "PROBLEM" label, three large serif statements, a smaller body line, and a reduced-size title. The `VideoScene` type gained `statements?: string[]` and `preIntro?: string`. **Judgment call:** the sandbox cannot run a live browser (headless Chromium download is network-blocked), so visual verification of the tighter/larger content in the pinned panel at 375/390/768px could not be performed in a real viewport. Sizing was tuned conservatively via `clamp()` and a ≤600px mobile override to keep the panel from overflowing; if it feels cramped on very short viewports, reduce the statement `font-size` or tighten the `.scene-intro`/block spacing further.
-
----
-
-*End of documentation.*
+- Keep `/media` filenames versioned because of the immutable cache header.
+- If changing a hero scene range, update both `lib/content.ts` and the scene/progress verification checks.
+- Preserve WebGL cleanup and the visibility/page-visibility gates when changing effects.
+- Preserve the mobile source media query at 600px unless the design breakpoint changes everywhere.
+- Do not replace production email variables with defaults in code. Use `EMAIL_DELIVERY_MODE=log` for local dry-runs.
+- If adding a new sidebar section, add both its DOM `id` and its `sections` entry in matching order.
