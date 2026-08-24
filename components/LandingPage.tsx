@@ -10,6 +10,7 @@ import ShapeBlur from './ShapeBlur';
 import Topography from './Topography';
 import SpecularButton from './SpecularButton';
 import SmartPreloader from './SmartPreloader';
+import Image from 'next/image';
 
 const auditItems = [
   ['1', 'TRACEABLE REASONING', 'Traceable reasoning behind every result'],
@@ -182,7 +183,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="site-footer">
-        <a href="#hero" className="footer-logo" aria-label="IREX home"><img src="/brand/irex-logo-dark.png" alt="IREX" /></a>
+        <a href="#hero" className="footer-logo" aria-label="IREX home"><Image src="/brand/irex-logo-dark.png" alt="IREX" /></a>
         <p className="footer-tagline">CGR™ is the next evolution of exploration intelligence.</p>
         <a href="https://www.linkedin.com/company/irex-pty-ltd/" target="_blank" rel="noreferrer" className="linkedin-link" aria-label="IREX on LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 8.4H3.2V21h3.3V8.4ZM4.85 3A1.95 1.95 0 1 0 4.85 6.9 1.95 1.95 0 0 0 4.85 3ZM21 13.8c0-3.8-2-5.6-4.7-5.6-2.17 0-3.14 1.2-3.68 2.04V8.4H9.3V21h3.32v-6.24c0-1.65.31-3.25 2.36-3.25 2.02 0 2.04 1.89 2.04 3.36V21H21v-7.2Z"/></svg></a>
       </footer>
