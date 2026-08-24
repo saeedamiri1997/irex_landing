@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-const START_DELAY_MS = 180;
-const REVEAL_MS = 1500;
-const EXIT_MS = 720;
+const START_DELAY_MS = 80;
+const REVEAL_MS = 650;
+const EXIT_DELAY_MS = 80;
+const EXIT_MS = 360;
 
 export default function SmartPreloader() {
   const [progress, setProgress] = useState(0);
@@ -37,7 +38,7 @@ export default function SmartPreloader() {
           document.body.style.overflow = originalOverflow;
           setDone(true);
         }, EXIT_MS);
-      }, 120);
+      }, EXIT_DELAY_MS);
     };
 
     frame = requestAnimationFrame(tick);

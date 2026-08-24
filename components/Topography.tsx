@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { Mesh, Program, Renderer, Triangle } from 'ogl';
+import { watchDevicePixelRatio } from '@/lib/dpr';
 
 type ColorMode = 'elevation' | 'uniform' | 'alternating';
 
@@ -217,12 +218,13 @@ export default function Topography({
     const container = containerRef.current;
     if (!container) return;
 
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
     const renderer = new Renderer({
       webgl: 2,
       alpha: true,
       premultipliedAlpha: true,
       antialias: false,
-      dpr: Math.min(window.devicePixelRatio || 1, 2),
+      dpr,
     });
 
     const gl = renderer.gl;
@@ -277,6 +279,7 @@ export default function Topography({
       const rect = container.getBoundingClientRect();
       const w = Math.max(1, Math.floor(rect.width));
       const h = Math.max(1, Math.floor(rect.height));
+      renderer.dpr = dpr;
       renderer.setSize(w, h);
       const res = program.uniforms.iResolution.value as Float32Array;
       res[0] = gl.drawingBufferWidth;
@@ -315,7 +318,7 @@ export default function Topography({
     ];
 
     let raf = 0;
-    let isVisible = true;
+    let isVisible = false;
     let isPageVisible = !document.hidden;
     const t0 = performance.now();
 
@@ -379,10 +382,16 @@ export default function Topography({
     };
     document.addEventListener('visibilitychange', onVisibility);
 
+    const stopDprWatcher = watchDevicePixelRatio(() => {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      setSize();
+    });
+
     tryStart();
 
     return () => {
       tryStop();
+      stopDprWatcher();
       ro.disconnect();
       io.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);

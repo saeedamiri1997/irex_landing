@@ -12,9 +12,6 @@ type EmailResult = {
   error?: string;
 };
 
-const DEFAULT_TO = 'irex.pty.ltd@gmail.com';
-const DEFAULT_FROM = 'IREX Applications <onboarding@resend.dev>';
-
 function escapeHtml(value: string) {
   return value
     .replaceAll('&', '&amp;')
@@ -29,23 +26,27 @@ function getEmailConfig() {
   return {
     mode,
     apiKey: process.env.RESEND_API_KEY,
-    to: process.env.APPLICATION_EMAIL || DEFAULT_TO,
-    from: process.env.RESEND_FROM_EMAIL || DEFAULT_FROM,
+    to: process.env.APPLICATION_EMAIL || '',
+    from: process.env.RESEND_FROM_EMAIL || '',
   };
 }
 
 export function getEmailHealth() {
   const config = getEmailConfig();
+  const missing = config.mode === 'resend'
+    ? [
+        !config.apiKey ? 'RESEND_API_KEY' : '',
+        !config.to ? 'APPLICATION_EMAIL' : '',
+        !config.from ? 'RESEND_FROM_EMAIL' : '',
+      ].filter(Boolean)
+    : [];
+
   return {
     mode: config.mode,
-    configured: config.mode === 'log' || Boolean(config.apiKey),
-    toConfigured: Boolean(process.env.APPLICATION_EMAIL),
-    fromConfigured: Boolean(process.env.RESEND_FROM_EMAIL),
-    missing: [
-      config.mode === 'resend' && !config.apiKey ? 'RESEND_API_KEY' : '',
-      !process.env.APPLICATION_EMAIL ? 'APPLICATION_EMAIL' : '',
-      !process.env.RESEND_FROM_EMAIL ? 'RESEND_FROM_EMAIL' : '',
-    ].filter(Boolean),
+    configured: config.mode === 'log' || missing.length === 0,
+    toConfigured: Boolean(config.to),
+    fromConfigured: Boolean(config.from),
+    missing,
   };
 }
 
@@ -73,8 +74,8 @@ export async function sendApplicationEmail(application: ApplicationEmail): Promi
 
   if (config.mode === 'log') {
     console.info('IREX application email dry run', {
-      to: config.to,
-      from: config.from,
+      to: config.to || '(not configured)',
+      from: config.from || '(not configured)',
       replyTo: application.email,
       subject,
       text,
@@ -82,7 +83,7 @@ export async function sendApplicationEmail(application: ApplicationEmail): Promi
     return { ok: true, mode: 'log', id: 'dry-run' };
   }
 
-  if (!config.apiKey) {
+  if (!config.apiKey || !config.to || !config.from) {
     return { ok: false, mode: 'resend', error: 'Email service is not configured' };
   }
 

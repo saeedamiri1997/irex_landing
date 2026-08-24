@@ -9,6 +9,8 @@ import SpecularButton from './SpecularButton';
 gsap.registerPlugin(ScrollTrigger);
 
 const NARRATIVE_DURATION = 25;
+const MIN_VIDEO_SEEK_DELTA = 0.04;
+const MIN_VIDEO_SEEK_INTERVAL_MS = 1000 / 30;
 
 export default function ScrollVideoScene({ onApply }: { onApply?: () => void }) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -34,13 +36,21 @@ export default function ScrollVideoScene({ onApply }: { onApply?: () => void }) 
 
     let targetProgress = 0;
     let raf = 0;
+    let lastSeekAt = -Infinity;
 
-    const scrubToScroll = () => {
+    const scrubToScroll = (now: number) => {
       const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : NARRATIVE_DURATION;
       const targetTime = gsap.utils.clamp(0, duration, targetProgress * duration);
+      const timeSinceLastSeek = now - lastSeekAt;
 
-      if (readyRef.current && video.readyState >= 2 && Math.abs(targetTime - video.currentTime) > 0.018) {
+      if (
+        readyRef.current
+        && video.readyState >= 2
+        && timeSinceLastSeek >= MIN_VIDEO_SEEK_INTERVAL_MS
+        && Math.abs(targetTime - video.currentTime) >= MIN_VIDEO_SEEK_DELTA
+      ) {
         video.currentTime = targetTime;
+        lastSeekAt = now;
       }
 
       raf = requestAnimationFrame(scrubToScroll);
