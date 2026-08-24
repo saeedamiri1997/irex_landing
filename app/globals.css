@@ -1647,6 +1647,15 @@ h2 {
 
     .reasoning-hero h2 {
         font-size: clamp(2.35rem, 7vw, 54px);
+        white-space: normal;
+    }
+
+    .value-outcome p {
+        white-space: normal;
+    }
+
+    .scene-copy[data-scene="problem"] .scene-intro__statement {
+        white-space: normal;
     }
 
     .contrast-line {
@@ -1709,9 +1718,8 @@ h2 {
 
     .scene-copy,
     .video-scene--right .scene-copy {
-        margin: 0 18px;
-
-        width: calc(100vw - 36px);
+        margin: 0;
+        width: 100%;
     }
 
     .video-scene,
@@ -1721,7 +1729,7 @@ h2 {
     }
 
     .scene-media video {
-        object-fit: fill;
+        object-fit: cover;
     }
 
     /* On phones the closing statement cannot reasonably stay on a single

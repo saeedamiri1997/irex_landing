@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { watchDevicePixelRatio } from '@/lib/dpr';
 
 const vertexShader = `varying vec2 v_texcoord; void main(){gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);v_texcoord=uv;}`;
 const fragmentShader = `
@@ -21,24 +22,145 @@ void main(){
   gl_FragColor=vec4(u_color,alpha);
 }`;
 
+const cappedDpr = () => Math.min(window.devicePixelRatio || 1, 2);
+
 export default function ShapeBlur({ className = '' }: { className?: string }) {
   const mountRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const mount = mountRef.current; if (!mount) return;
-    const scene = new THREE.Scene(); const camera = new THREE.OrthographicCamera(); camera.position.z = 1;
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true }); renderer.setClearColor(0x000000, 0); mount.appendChild(renderer.domElement);
-    const mouse = new THREE.Vector2(), damp = new THREE.Vector2(), res = new THREE.Vector2();
-    const material = new THREE.ShaderMaterial({ vertexShader, fragmentShader, transparent: true, uniforms: {
-      u_mouse: { value: damp }, u_resolution: { value: res }, u_pixelRatio: { value: 1 }, u_color: { value: new THREE.Color('#00B8C4') },
-      u_radius: { value: 32 }, u_borderSize: { value: 2 }, u_circleSize: { value: 360 }, u_circleEdge: { value: 220 },
-    }});
-    const quad = new THREE.Mesh(new THREE.PlaneGeometry(1,1), material); scene.add(quad);
-    let w=1,h=1,raf=0,last=performance.now();
-    const resize=()=>{w=mount.clientWidth;h=mount.clientHeight;const dpr=Math.min(devicePixelRatio||1,2);const style=getComputedStyle(mount);const radius=parseFloat(style.borderTopLeftRadius)||0;renderer.setPixelRatio(dpr);renderer.setSize(w,h,false);camera.left=-w/2;camera.right=w/2;camera.top=h/2;camera.bottom=-h/2;camera.updateProjectionMatrix();quad.scale.set(w,h,1);res.set(w,h).multiplyScalar(dpr);material.uniforms.u_pixelRatio.value=dpr;material.uniforms.u_radius.value=radius*dpr;material.uniforms.u_borderSize.value=2*dpr;material.uniforms.u_circleSize.value=360*dpr;material.uniforms.u_circleEdge.value=220*dpr;};
-    const onMove=(e:PointerEvent)=>{const r=mount.getBoundingClientRect();mouse.set(e.clientX-r.left,e.clientY-r.top);}; window.addEventListener('pointermove',onMove,{passive:true});
-    const ro=new ResizeObserver(resize);ro.observe(mount);resize();
-    const tick=(now:number)=>{const dt=Math.min((now-last)/1000,.05);last=now;damp.x=THREE.MathUtils.damp(damp.x,mouse.x,8,dt);damp.y=THREE.MathUtils.damp(damp.y,mouse.y,8,dt);renderer.render(scene,camera);raf=requestAnimationFrame(tick);};raf=requestAnimationFrame(tick);
-    return()=>{cancelAnimationFrame(raf);ro.disconnect();window.removeEventListener('pointermove',onMove);quad.geometry.dispose();material.dispose();renderer.dispose();renderer.forceContextLoss();if(renderer.domElement.parentNode===mount)mount.removeChild(renderer.domElement);};
-  },[]);
+    const mount = mountRef.current;
+    if (!mount) return;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera();
+    camera.position.z = 1;
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setClearColor(0x000000, 0);
+    mount.appendChild(renderer.domElement);
+
+    const mouse = new THREE.Vector2();
+    const damp = new THREE.Vector2();
+    const resolution = new THREE.Vector2();
+    const material = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      transparent: true,
+      uniforms: {
+        u_mouse: { value: damp },
+        u_resolution: { value: resolution },
+        u_pixelRatio: { value: 1 },
+        u_color: { value: new THREE.Color('#00B8C4') },
+        u_radius: { value: 32 },
+        u_borderSize: { value: 2 },
+        u_circleSize: { value: 360 },
+        u_circleEdge: { value: 220 },
+      },
+    });
+
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
+    scene.add(quad);
+
+    let width = 1;
+    let height = 1;
+    let raf = 0;
+    let last = performance.now();
+    let isVisible = false;
+    let isPageVisible = !document.hidden;
+
+    const resize = () => {
+      width = mount.clientWidth;
+      height = mount.clientHeight;
+      const dpr = cappedDpr();
+      const style = getComputedStyle(mount);
+      const radius = parseFloat(style.borderTopLeftRadius) || 0;
+
+      renderer.setPixelRatio(dpr);
+      renderer.setSize(width, height, false);
+      camera.left = -width / 2;
+      camera.right = width / 2;
+      camera.top = height / 2;
+      camera.bottom = -height / 2;
+      camera.updateProjectionMatrix();
+      quad.scale.set(width, height, 1);
+
+      resolution.set(width, height).multiplyScalar(dpr);
+      material.uniforms.u_pixelRatio.value = dpr;
+      material.uniforms.u_radius.value = radius * dpr;
+      material.uniforms.u_borderSize.value = 2 * dpr;
+      material.uniforms.u_circleSize.value = 360 * dpr;
+      material.uniforms.u_circleEdge.value = 220 * dpr;
+    };
+
+    const onMove = (event: PointerEvent) => {
+      const rect = mount.getBoundingClientRect();
+      mouse.set(event.clientX - rect.left, event.clientY - rect.top);
+    };
+
+    const tryStop = () => {
+      if (raf !== 0) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    };
+
+    const tick = (now: number) => {
+      raf = 0;
+      if (!isVisible || !isPageVisible) return;
+
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      damp.x = THREE.MathUtils.damp(damp.x, mouse.x, 8, dt);
+      damp.y = THREE.MathUtils.damp(damp.y, mouse.y, 8, dt);
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(tick);
+    };
+
+    const tryStart = () => {
+      if (isVisible && isPageVisible && raf === 0) {
+        last = performance.now();
+        raf = requestAnimationFrame(tick);
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(mount);
+    resize();
+    window.addEventListener('pointermove', onMove, { passive: true });
+
+    const intersectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+        if (isVisible) tryStart();
+        else tryStop();
+      },
+      { threshold: 0 },
+    );
+    intersectionObserver.observe(mount);
+
+    const onVisibility = () => {
+      isPageVisible = !document.hidden;
+      if (isPageVisible) tryStart();
+      else tryStop();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    const stopDprWatcher = watchDevicePixelRatio(resize);
+
+    return () => {
+      tryStop();
+      stopDprWatcher();
+      resizeObserver.disconnect();
+      intersectionObserver.disconnect();
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pointermove', onMove);
+      quad.geometry.dispose();
+      material.dispose();
+      renderer.dispose();
+      renderer.forceContextLoss();
+      if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
+    };
+  }, []);
+
   return <div ref={mountRef} className={className} aria-hidden="true" />;
 }
