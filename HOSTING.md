@@ -41,7 +41,7 @@ Configure these values in the host's secret/environment settings before starting
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | Yes | Public Cloudflare Turnstile site key used by the browser. |
 | `TURNSTILE_SECRET_KEY` | Yes | Server-only Cloudflare Turnstile verification secret. |
 
-`RESEND_API_KEY`, `APPLICATION_EMAIL`, and `RESEND_FROM_EMAIL` have no production fallbacks in the email sender. Hosting must provide them. The sender domain must be verified in Resend, and the Turnstile site-key hostname configuration must include the real application domain.
+`RESEND_API_KEY`, `APPLICATION_EMAIL`, and `RESEND_FROM_EMAIL` have no production fallbacks in the email sender. Hosting must provide them. The sender domain must be verified in Resend, and the Turnstile site-key hostname configuration must include the real application domain. `NEXT_PUBLIC_TURNSTILE_SITE_KEY` is inlined into the browser bundle by Next, so it must be present before `npm run build`; setting it only when starting the server is too late.
 
 For local/dry-run work only, set `EMAIL_DELIVERY_MODE=log`. In that mode the API logs the email payload and returns `{ "ok": true, "mode": "log", "id": "dry-run" }`; it does not require Resend recipient/sender settings. Cloudflare's documented test keys may be used locally. Never use test keys or log mode as the production configuration.
 

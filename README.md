@@ -38,7 +38,7 @@ NEXT_PUBLIC_TURNSTILE_SITE_KEY=...
 TURNSTILE_SECRET_KEY=...
 ```
 
-`RESEND_FROM_EMAIL` must be a sender/domain verified in Resend. `APPLICATION_EMAIL` is the recipient for applications. These values are intentionally not fabricated by the server; the hosting environment must provide them. See [HOSTING.md](./HOSTING.md) for deployment and health-check details.
+Set `NEXT_PUBLIC_TURNSTILE_SITE_KEY` before `npm run build` as well as in the deployed environment: Next inlines `NEXT_PUBLIC_*` values into the browser bundle at build time. `RESEND_FROM_EMAIL` must be a sender/domain verified in Resend. `APPLICATION_EMAIL` is the recipient for applications. These values are intentionally not fabricated by the server; the hosting environment must provide them. See [HOSTING.md](./HOSTING.md) for deployment and health-check details.
 
 The form explicitly renders Turnstile and does not submit until a token exists. Load, error, expired-token, server rejection, network, rate-limit, and missing-email-configuration states are surfaced in the modal.
 

@@ -245,6 +245,8 @@ There are no production fallback email addresses or API keys in the sender. Miss
 
 Copy `.env.example` to `.env.local` for local work. The local template selects log mode and contains Cloudflare test credentials. The test credentials are not production credentials.
 
+`NEXT_PUBLIC_TURNSTILE_SITE_KEY` is a build-time public variable in Next.js. It must be available before `npm run build` so that the browser bundle receives the correct site key; setting it only at server start does not change an already-built client bundle.
+
 Production must set:
 
 ```env
