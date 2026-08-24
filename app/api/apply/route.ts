@@ -6,16 +6,23 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TURNSTILE_VERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 const TURNSTILE_TEST_SECRET = '1x0000000000000000000000000000000AA';
 
+function getTurnstileSecret() {
+  return process.env.TURNSTILE_SECRET_KEY || (process.env.NODE_ENV === 'production' ? '' : TURNSTILE_TEST_SECRET);
+}
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export function GET() {
-  return NextResponse.json(getEmailHealth());
+  return NextResponse.json({
+    ...getEmailHealth(),
+    turnstileConfigured: Boolean(process.env.TURNSTILE_SECRET_KEY),
+  });
 }
 
 async function verifyTurnstile(token: unknown, ip: string) {
-  const secret = process.env.TURNSTILE_SECRET_KEY || TURNSTILE_TEST_SECRET;
-  if (!token || typeof token !== 'string') return false;
+  const secret = getTurnstileSecret();
+  if (!secret || !token || typeof token !== 'string') return false;
 
   const formData = new FormData();
   formData.append('secret', secret);
