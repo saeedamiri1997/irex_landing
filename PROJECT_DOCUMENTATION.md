@@ -300,7 +300,7 @@ The investigation baseline recorded before these fixes was:
 - Hero scroll jank near 1,000 CSS px/s: 24 frame gaps above 50ms at 375px and 31 at 768px.
 - Before layout fixes, representative `scrollWidth` values were 406px at 375/390 and 831px at 720/768 while body overflow masking hid the defects.
 
-The post-fix production build was served successfully with the standalone server and passed HTTP smoke checks for `/`, both WebM files, the logos/OG image, and `/api/apply`. Static regression checks also confirmed the six requested viewport breakpoints in the CSS rules, the 600px mobile source media query, the <=900px sidebar media boundary, the three gated WebGL effects, and the DPR watcher re-subscription behavior.
+The post-fix production build was served successfully with the standalone server and passed HTTP smoke checks for `/`, both WebM files, the logos/OG image, and `/api/apply`. Static regression checks confirmed the responsive rules intended for the six requested viewport checks, the 600px mobile source media query, the <=900px sidebar media boundary, the three gated WebGL effects, and the DPR watcher re-subscription behavior.
 
 A numeric post-fix browser result could not be produced in this sandbox. There is no Chrome/Chromium executable installed: `npx playwright install chromium` failed because the browser download connection was reset, and both Lighthouse attempts (mobile 412×823 and desktop) stopped with Lighthouse's `CHROME_PATH`/Chrome-not-installed error. Consequently, the 412×823 and desktop scores, the >50ms jank counts at 375/768, and real-browser `scrollWidth` measurements at 375×812, 390×844, 600×900, 720×900, 768×1024, and 900×900 remain unverified here rather than being represented as assumed passes.
 
