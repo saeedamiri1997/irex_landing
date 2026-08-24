@@ -59,7 +59,7 @@ main {
     background: var(--navy);
     pointer-events: auto;
     transform: translate3d(0, 0, 0);
-    transition: transform 0.72s cubic-bezier(0.83, 0, 0.17, 1);
+    transition: transform 0.36s cubic-bezier(0.83, 0, 0.17, 1);
 }
 
 .smart-preloader--exit {
