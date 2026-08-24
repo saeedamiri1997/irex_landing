@@ -48,6 +48,49 @@ main {
 
 
 /* =========================================================
+   SMART PRELOADER
+   ========================================================= */
+
+.smart-preloader {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    overflow: hidden;
+    background: var(--navy);
+    pointer-events: auto;
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.72s cubic-bezier(0.83, 0, 0.17, 1);
+}
+
+.smart-preloader--exit {
+    transform: translate3d(0, -100%, 0);
+    pointer-events: none;
+}
+
+.smart-preloader__fill {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: #C97A32;
+    transform-origin: 50% 100%;
+    transition: transform 0.18s linear;
+    will-change: transform;
+}
+
+.smart-preloader__counter {
+    position: absolute;
+    right: clamp(24px, 4vw, 56px);
+    bottom: clamp(22px, 4vw, 54px);
+    z-index: 2;
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(3.6rem, 9vw, 8rem);
+    line-height: 0.82;
+    color: var(--white);
+    pointer-events: none;
+}
+
+
+/* =========================================================
    COMMON / TYPOGRAPHY
    ========================================================= */
 
@@ -136,7 +179,7 @@ h2 {
 
 .header-statement {
     font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
+    font-size: 0.98rem;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -330,6 +373,7 @@ h2 {
     position: relative;
 
     height: 100vh;
+    height: 100svh;
     min-height: 680px;
 
     display: flex;
@@ -355,6 +399,8 @@ h2 {
 
     width: 100%;
     height: 100%;
+    min-width: 100%;
+    min-height: 100%;
 
     object-fit: cover;
 }
@@ -472,6 +518,8 @@ h2 {
     color: var(--coral);
     font-weight: 700;
     font-size: clamp(1.25rem, 2.3vw, 2rem);
+    letter-spacing: 0;
+    text-transform: none;
     line-height: 1.05;
     margin: 0.5rem 0 1rem;
 }
@@ -484,11 +532,11 @@ h2 {
 
 .scene-copy[data-scene="problem"] .scene-intro__label {
     font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
+    font-size: 1.46rem;
     font-weight: 700;
     letter-spacing: 0.13em;
     text-transform: uppercase;
-    color: var(--copper);
+    color: var(--teal);
     margin-bottom: 0.9rem;
 }
 
@@ -499,6 +547,7 @@ h2 {
     line-height: 1.02;
     letter-spacing: -0.02em;
     color: var(--white);
+    white-space: nowrap;
 }
 
 .scene-copy[data-scene="problem"] .scene-intro__body {
@@ -591,7 +640,7 @@ h2 {
     font-size: clamp(2.1rem, 4vw, 54px);
     line-height: 1;
 
-    color: var(--white);
+    color: var(--copper);
 }
 
 .hero-actions {
@@ -628,9 +677,20 @@ h2 {
 .scene-copy[data-scene="prediction"] .scene-lead,
 .scene-copy[data-scene="prediction"] .scene-text-block p {
     margin: 0;
-    font-size: 0.85rem;
+    font-size: clamp(1.5rem, 3.2vw, 54px);
     line-height: 1.6;
     color: rgba(245, 247, 250, 0.84);
+}
+
+.scene-copy[data-scene="prediction"] .scene-lead {
+    font-family: 'Instrument Serif', serif;
+    font-size: 54px;
+    line-height: 1.05;
+}
+
+.scene-copy[data-scene="prediction"] .scene-text-block p {
+    font-weight: 700;
+    color: var(--copper);
 }
 
 .scene-copy[data-scene="prediction"] .scene-text-block {
@@ -704,11 +764,17 @@ h2 {
     max-width: 900px;
 }
 
+.cgr-definition-intro,
 .cgr-definition-copy p {
     margin: 0;
     color: var(--muted);
+    font-family: 'DM Mono', monospace;
     font-size: clamp(1.02rem, 1.7vw, 1.3rem);
     line-height: 1.8;
+}
+
+.cgr-definition-intro {
+    margin-bottom: 1.2rem;
 }
 
 .cgr-definition-copy .cgr-copper {
@@ -717,6 +783,21 @@ h2 {
 
 .cgr-definition-copy .cgr-coral {
     color: var(--coral);
+}
+
+.cgr-definition-copy .cgr-large {
+    font-size: clamp(1.5rem, 2.7vw, 2.2rem);
+    line-height: 1.35;
+}
+
+.cgr-definition-copy strong {
+    font-weight: 700;
+}
+
+.cgr-definition-copy sup {
+    font-size: 0.55em;
+    line-height: 0;
+    vertical-align: super;
 }
 
 /* =========================================================
@@ -733,7 +814,7 @@ h2 {
     line-height: 1.5;
     font-weight: 700;
 
-    color: var(--coral);
+    color: var(--copper);
 }
 
 
@@ -743,7 +824,7 @@ h2 {
 
 .reasoning-shell {
     display: grid;
-    gap: 110px;
+    gap: 70px;
 }
 
 .reasoning-hero {
@@ -758,6 +839,7 @@ h2 {
     line-height: 0.98;
     margin: 0;
     white-space: nowrap;
+    color: var(--copper);
 }
 
 .reasoning-hero p {
@@ -768,7 +850,8 @@ h2 {
 }
 
 .reasoning-intro {
-    margin-top: 1.35rem !important;
+    margin-top: 1rem !important;
+    margin-bottom: -1.8rem !important;
     color: var(--muted) !important;
 }
 
@@ -832,6 +915,10 @@ h2 {
     margin: 0 0 6rem;
 }
 
+.manifesto-title .coral {
+    color: var(--coral);
+}
+
 .contrast-line {
     font-family: 'DM Mono', monospace;
     font-size: clamp(1.35rem, 2.5vw, 2.2rem);
@@ -876,7 +963,7 @@ h2 {
     line-height: 1.05;
 
     margin: 0;
-    color: var(--coral);
+    color: var(--copper);
 }
 
 .manifesto-final em {
@@ -969,6 +1056,10 @@ h2 {
     margin: 55px 0 1rem;
 }
 
+.spotlight-card h3 {
+    color: var(--copper);
+}
+
 .spotlight-card p {
     font-size: 0.85rem;
     line-height: 1.65;
@@ -1051,15 +1142,31 @@ h2 {
 .value-outcome p {
     font-family: 'Instrument Serif', serif;
 
-    font-size: clamp(3rem, 5vw, 54px);
+    font-size: clamp(1.85rem, 3vw, 2.55rem);
 
-    line-height: 0.95;
+    line-height: 1.1;
 
     margin: 0.1em 0;
+    white-space: nowrap;
 }
 
-.value-outcome p:last-child {
-    color: var(--white);
+.value-outcome span {
+    color: var(--copper);
+}
+
+.value-outcome p:last-child,
+.value-decision-line {
+    color: var(--coral);
+}
+
+.value-outcome .value-decision-line {
+    margin-top: 1.2rem;
+    font-family: 'DM Mono', monospace;
+    font-size: clamp(1rem, 1.7vw, 1.35rem);
+    font-weight: 700;
+    line-height: 1.45;
+    color: #FF5860 !important;
+    white-space: normal;
 }
 
 
@@ -1412,6 +1519,12 @@ h2 {
     grid-column: 1 / -1;
 }
 
+.apply-form .captcha-field {
+    grid-column: 1 / -1;
+    min-height: 65px;
+    max-width: 320px;
+}
+
 .apply-form input,
 .apply-form textarea {
     width: 100%;
@@ -1601,6 +1714,16 @@ h2 {
         width: calc(100vw - 36px);
     }
 
+    .video-scene,
+    .video-scene--narrative {
+        height: 100svh;
+        min-height: 100svh;
+    }
+
+    .scene-media video {
+        object-fit: fill;
+    }
+
     /* On phones the closing statement cannot reasonably stay on a single
        line at a readable size, so let it wrap gracefully (never overflow).
        It remains the bold coral emphasis line, still larger than lines 2–3. */
@@ -1619,6 +1742,7 @@ h2 {
 
     .scene-copy[data-scene="problem"] .scene-intro__statement {
         font-size: clamp(1.35rem, 6vw, 1.75rem);
+        white-space: normal;
     }
 
     .scene-copy[data-scene="problem"] h1 {
@@ -1635,6 +1759,10 @@ h2 {
         grid-template-columns: 1fr;
         gap: 0.8rem;
         padding: 24px 0;
+    }
+
+    .value-outcome p {
+        white-space: normal;
     }
 
     .positioning-card {

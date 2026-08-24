@@ -12,7 +12,7 @@ type EmailResult = {
   error?: string;
 };
 
-const DEFAULT_TO = 'alipourmohammadi90@gmail.com';
+const DEFAULT_TO = 'irex.pty.ltd@gmail.com';
 const DEFAULT_FROM = 'IREX Applications <onboarding@resend.dev>';
 
 function escapeHtml(value: string) {

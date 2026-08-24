@@ -9,21 +9,22 @@ import SpotlightCard from './SpotlightCard';
 import ShapeBlur from './ShapeBlur';
 import Topography from './Topography';
 import SpecularButton from './SpecularButton';
+import SmartPreloader from './SmartPreloader';
 
 const auditItems = [
-  ['01', 'TRACEABLE REASONING', 'Traceable reasoning behind every result'],
-  ['02', 'EXPLICIT LINKS', 'Explicit links between data and conclusions'],
-  ['03', 'JUSTIFIED DECISIONS', 'Clear justification for accepted and rejected hypotheses'],
-  ['04', 'REPRODUCIBLE OUTCOMES', 'Consistent, reproducible outcomes'],
+  ['1', 'TRACEABLE REASONING', 'Traceable reasoning behind every result'],
+  ['2', 'EXPLICIT LINKS', 'Explicit links between data and conclusions'],
+  ['3', 'JUSTIFIED DECISIONS', 'Clear justification for accepted and rejected hypotheses'],
+  ['4', 'REPRODUCIBLE OUTCOMES', 'Consistent, reproducible outcomes'],
 ];
 
 const controlItems = [
-  ['01', 'INFRASTRUCTURE', 'Fully deployable within your infrastructure'],
-  ['02', 'DATA OWNERSHIP', 'No sensitive data leaves your environment'],
-  ['03', 'INDEPENDENCE', 'Personalised AI without external dependencies'],
-  ['04', 'DETERMINISTIC', 'Deterministic, reproducible execution'],
-  ['05', 'EXPERT CONTROL', 'Expert-in-the-loop control with override capability'],
-  ['06', 'DOMAIN KNOWLEDGE', 'Domain expertise explicitly encoded into system reasoning'],
+  ['1', 'INFRASTRUCTURE', 'Fully deployable within your infrastructure'],
+  ['2', 'DATA OWNERSHIP', 'No sensitive data leaves your environment'],
+  ['3', 'INDEPENDENCE', 'Personalised AI without external dependencies'],
+  ['4', 'DETERMINISTIC', 'Deterministic, reproducible execution'],
+  ['5', 'EXPERT CONTROL', 'Expert-in-the-loop control with override capability'],
+  ['6', 'DOMAIN KNOWLEDGE', 'Domain expertise explicitly encoded into system reasoning'],
 ];
 
 const valueItems = [
@@ -34,9 +35,9 @@ const valueItems = [
 ];
 
 const reasoningItems = [
-  ['01', 'Generate', 'Construct multiple geological hypotheses using structured data and mineral-system topology.'],
-  ['02', 'Test', 'Evaluate each hypothesis against evidence and system constraints.'],
-  ['03', 'Reject', 'Eliminate interpretations that fail to satisfy invariant relationships.'],
+  ['1', 'Generate', 'Construct multiple geological hypotheses using structured data and mineral-system topology.'],
+  ['2', 'Test', 'Evaluate each hypothesis against evidence and system constraints.'],
+  ['3', 'Reject', 'Eliminate interpretations that fail to satisfy invariant relationships.'],
 ];
 
 export default function LandingPage() {
@@ -46,6 +47,7 @@ export default function LandingPage() {
 
   return (
     <main>
+      <SmartPreloader />
       <Header />
       <LineSidebar />
       <ScrollVideoScene onApply={openApply} />
@@ -75,7 +77,7 @@ export default function LandingPage() {
       <section id="principle" className="manifesto-section">
         <div className="section-shell manifesto-shell">
           <span className="eyebrow">CORE PRINCIPLE</span>
-          <h2 className="manifesto-title">Every Deposit Is Individual —<br />Systems Have Invariants.</h2>
+          <h2 className="manifesto-title"><span className="coral">Every Deposit Is Individual</span> —<br />Systems Have Invariants.</h2>
           <p className="contrast-line"><span>DEPOSIT FOOTPRINTS</span> <strong>ARE NOISY.</strong> <span>MINERAL SYSTEMS</span> <strong>ARE NOT.</strong></p>
           <p className="manifesto-copy">While observations vary, the underlying geological processes follow invariant relationships. IREX identifies and reasons over these invariants — treating each target as a system to be understood, not a pattern to be matched.</p>
           <p className="manifesto-final">EXPLORATION IS A REASONING PROBLEM, NOT PREDICTION.</p>
@@ -111,7 +113,10 @@ export default function LandingPage() {
               </li>
             ))}
           </ul>
-          <div className="value-outcome"><p>Fewer costly errors.</p><p>Capital deployed with discipline.</p></div>
+          <div className="value-outcome">
+            <p><span>Fewer costly errors.</span> Capital deployed with discipline.</p>
+            <p className="value-decision-line">IREX optimizes for Decision Quality, Not Prediction Accuracy.</p>
+          </div>
         </div>
       </section>
 
@@ -119,7 +124,7 @@ export default function LandingPage() {
         <div className="positioning-card">
           <ShapeBlur className="positioning-card__effect" />
           <div className="positioning-card__content">
-            <span className="eyebrow">Built for Reasoning</span><h2>IREX Is Not Another prediction model</h2>
+            <span className="eyebrow">Built for Reasoning</span><h2>IREX Is Not Another prediction model.</h2>
             <p>It is a reasoning system designed to identify invariants within noisy data — enabling decisions grounded in system understanding, not statistical patterns.</p>
           </div>
         </div>
@@ -129,11 +134,11 @@ export default function LandingPage() {
         <div className="section-shell cgr-definition-shell">
           <SpotlightCard className="cgr-definition-card" spotlightColor="rgba(0,184,196,.14)">
             <span className="eyebrow">Computational Geological Reasoning™ (CGR™)</span>
-            <h2 id="cgr-definition-title">Geological reasoning has guided mineral discovery for generations.</h2>
+            <p id="cgr-definition-title" className="cgr-definition-intro">Geological reasoning has guided mineral discovery for generations.</p>
             <div className="cgr-definition-copy">
-              <p className="cgr-copper">CGR™ extends geological reasoning into computational systems.</p>
+              <p className="cgr-copper cgr-large">CGR™ extends geological reasoning into computational systems.</p>
               <p>CGR™ extends beyond prediction by transforming exploration data into structured geological knowledge, systematically generating, testing, and rejecting competing interpretations to converge on the most evidence-supported geological hypotheses under uncertainty.</p>
-              <p className="cgr-coral">IREX® is developing, validating, and commercialising CGR™ as a new category of exploration intelligence for decision-making under uncertainty.</p>
+              <p className="cgr-coral"><strong>IREX<sup>®</sup> is developing, validating, and commercialising CGR™ as a new category of exploration intelligence for decision-making under uncertainty.</strong></p>
             </div>
           </SpotlightCard>
         </div>
@@ -170,9 +175,9 @@ export default function LandingPage() {
         <div className="cta-overlay" />
         <div className="cta-content">
           <h2>Early Adopter Program</h2>
-          <p>This is a collaboration to test, validate, and refine a new approach to exploration - based on reasoning, not prediction.</p>
+          <p>For leaders responsible for exploration strategy, capital allocation, and high-stakes decisions under uncertainty.</p>
           <SpecularButton onClick={openApply}>Apply to Join <span aria-hidden="true">↗</span></SpecularButton>
-          <span className="microcopy">We work with a small number of selected partners.</span>
+          <span className="microcopy">Limited Foundation Partner Opportunities</span>
         </div>
       </section>
 

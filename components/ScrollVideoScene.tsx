@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { narrativeVideo, videoScenes } from '@/lib/content';
+import { narrativeMobileVideo, narrativeVideo, videoScenes } from '@/lib/content';
 import SpecularButton from './SpecularButton';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -83,7 +83,6 @@ export default function ScrollVideoScene({ onApply }: { onApply?: () => void }) 
       <div className="scene-media" aria-hidden="true">
         <video
           ref={videoRef}
-          src={narrativeVideo}
           muted
           playsInline
           preload="auto"
@@ -91,7 +90,10 @@ export default function ScrollVideoScene({ onApply }: { onApply?: () => void }) 
           onLoadedData={() => setReady(true)}
           onCanPlayThrough={() => setReady(true)}
           className={ready ? 'is-ready' : ''}
-        />
+        >
+          <source src={narrativeMobileVideo} type="video/webm" media="(max-width: 600px)" />
+          <source src={narrativeVideo} type="video/webm" />
+        </video>
         <div className="scene-vignette" />
       </div>
 

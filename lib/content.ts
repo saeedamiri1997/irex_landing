@@ -9,7 +9,8 @@ export const sections = [
   { id: 'apply', label: 'Apply' },
 ] as const;
 
-export const narrativeVideo = '/media/irex-scroll-narrative.mp4';
+export const narrativeVideo = '/media/irex-scroll-narrative.webm';
+export const narrativeMobileVideo = '/media/irex-scroll-narrative-mobile.webm';
 
 export type VideoScene = {
   id: string;
@@ -42,18 +43,18 @@ export const videoScenes: VideoScene[] = [
     start: 0,
     end: 3.23,
     label: 'HERO SECTION',
-    title: 'Make Better Target Decisions Before You Drill.',
+    title: 'Make Better Target Decisions\nBefore You Drill.',
     body: 'Transforming exploration from pattern matching to Computational Geological Reasoning™.',
     coreLine: 'Generate. Test. Reject',
     cta: true,
   },
   {
     id: 'prediction',
-    eyebrow: '',
+    eyebrow: 'From Prediction To Reasoning',
     start: 3.23,
     end: 8.07,
     label: 'FROM PREDICTION TO REASONING',
-    title: 'From Prediction To Reasoning',
+    title: '',
     body: 'Prediction shaped the last generation of exploration.',
     blocks: [
       {
@@ -62,7 +63,6 @@ export const videoScenes: VideoScene[] = [
         ],
       },
     ],
-    closing: 'IREX optimizes for Decision Quality, Not Prediction Accuracy',
   },
   {
     id: 'first-principles',
@@ -92,7 +92,7 @@ export const videoScenes: VideoScene[] = [
     end: 20.64,
     label: 'PROBLEM',
     title: 'Decisions Are Made Under Noise',
-    statements: ['Data rich.', 'Interpretation poor.', 'Resource-Constrained'],
+    statements: ['Data-Rich. Interpretation-Poor. Resource-Constrained.'],
     preIntro: 'Exploration operates on sparse, indirect, and often conflicting observations.',
     blocks: [
       {
