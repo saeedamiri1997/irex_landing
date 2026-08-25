@@ -44,12 +44,12 @@ The form explicitly renders Turnstile and does not submit until a token exists. 
 
 ## Media
 
-The hero uses the checked-in WebM files in `public/media`:
+The hero uses a viewport-specific media branch at `max-width: 600px`:
 
-- `irex-scroll-narrative.webm` — desktop source, approximately 25.01 seconds and 12.97 MB.
-- `irex-scroll-narrative-mobile.webm` — mobile source, approximately 25.01 seconds and 10.54 MB.
+- Above 600px, `irex-scroll-narrative.webm` is the scroll-scrubbed desktop/tablet source (approximately 25.01 seconds and 12.97 MB).
+- At or below 600px, the hero mounts only five 9:16 WebP frames: `frame-01-rocks-916.webp` through `frame-05-layers-916.webp`. They crossfade as the shared ScrollTrigger scene index changes.
 
-`ScrollVideoScene` selects the mobile file with `<source media="(max-width: 600px)">`; the second source is the desktop fallback. The older four MP4 files and five PNG frames remain in `public/media` as static assets, but they are not used by the current hero component. The page does not request `/media/irex-scroll-narrative.mp4`.
+The server emits neither branch before client-side viewport detection, so a mobile browser never mounts or requests a hero video. `irex-scroll-narrative-mobile.webm` has been removed. The older four MP4 files and five PNG frames remain in `public/media` as static assets, but they are not used by the current hero component. The page does not request `/media/irex-scroll-narrative.mp4`.
 
 ## Commands
 
