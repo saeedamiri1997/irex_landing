@@ -371,6 +371,24 @@ h2 {
     opacity: 1;
 }
 
+.scene-media__image-stack,
+.scene-media__image {
+    position: absolute;
+    inset: 0;
+}
+
+.scene-media__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.55s ease;
+}
+
+.scene-media__image.is-active {
+    opacity: 1;
+}
+
 .scene-vignette {
     position: absolute;
     inset: 0;
@@ -1714,10 +1732,6 @@ h2 {
         min-height: 100svh;
     }
 
-    .scene-media video {
-        object-fit: cover;
-    }
-
     /* On phones the closing statement cannot reasonably stay on a single
        line at a readable size, so let it wrap gracefully (never overflow).
        It remains the bold coral emphasis line, still larger than lines 2–3. */
@@ -1815,6 +1829,7 @@ h2 {
     .site-header,
     .specular-button,
     .scene-media video,
+    .scene-media__image,
     .line-sidebar * {
         transition: none !important;
     }
