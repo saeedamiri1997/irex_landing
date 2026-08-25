@@ -10,13 +10,14 @@ export const sections = [
 ] as const;
 
 export const narrativeVideo = '/media/irex-scroll-narrative.webm';
-export const narrativeMobileVideo = '/media/irex-scroll-narrative-mobile.webm';
 
 export type VideoScene = {
   id: string;
   eyebrow: string;
   start: number;
   end: number;
+  /** Portrait static frame used by the <=600px hero media branch. */
+  mobileImage: string;
   label: string;
   title: string;
   body?: string;
@@ -42,6 +43,7 @@ export const videoScenes: VideoScene[] = [
     eyebrow: 'Computational Geological Reasoning™ (CGR™)',
     start: 0,
     end: 3.23,
+    mobileImage: '/media/frame-01-rocks-916.webp',
     label: 'HERO SECTION',
     title: 'Make Better Target Decisions\nBefore You Drill.',
     body: 'Transforming exploration from pattern matching to Computational Geological Reasoning™.',
@@ -53,6 +55,7 @@ export const videoScenes: VideoScene[] = [
     eyebrow: 'From Prediction To Reasoning',
     start: 3.23,
     end: 8.07,
+    mobileImage: '/media/frame-02-topography-916.webp',
     label: 'FROM PREDICTION TO REASONING',
     title: '',
     body: 'Prediction shaped the last generation of exploration.',
@@ -69,6 +72,7 @@ export const videoScenes: VideoScene[] = [
     eyebrow: 'First Principles',
     start: 8.07,
     end: 14.46,
+    mobileImage: '/media/frame-03-cross-section-916.webp',
     label: 'FIRST PRINCIPLES',
     title: 'Ore deposits are not predictable.',
     body: 'Deposits footprints are noisy, localized expressions of underlying mineral systems.',
@@ -90,6 +94,7 @@ export const videoScenes: VideoScene[] = [
     eyebrow: '',
     start: 14.46,
     end: 20.64,
+    mobileImage: '/media/frame-04-diorama-916.webp',
     label: 'PROBLEM',
     title: 'Decisions Are Made Under Noise',
     statements: ['Data-Rich. Interpretation-Poor. Resource-Constrained.'],
@@ -114,6 +119,7 @@ export const videoScenes: VideoScene[] = [
     eyebrow: 'LIMITATIONS',
     start: 20.64,
     end: 25,
+    mobileImage: '/media/frame-05-layers-916.webp',
     label: 'LIMITATIONS',
     title: 'Patterns Don’t Equal Understanding',
     blocks: [

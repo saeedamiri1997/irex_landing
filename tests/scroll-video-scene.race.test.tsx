@@ -1,23 +1,10 @@
 /**
- * Regression test for the cold-load hero video race.
+ * Regression coverage for the pinned hero's two media branches.
  *
- * Failure mode (reported): on a genuine first visit (empty HTTP cache) the hero
- * scroll-scrub video stays at opacity 0 ("blank") and never scrubs; a manual
- * reload fixes it because the media then comes from the browser cache.
- *
- * Root cause of the race: with `preload="auto"` the browser starts fetching
- * the WebM as soon as the SSR'd <video> is parsed — i.e. BEFORE the Next.js
- * bundle finishes downloading/parsing and React hydrates. Media events
- * (`loadedmetadata`, `loadeddata`, `canplay`, `canplaythrough`) that fire
- * before hydration are permanently missed by the JSX `onLoadedMetadata` props
- * (React attaches those listeners only at hydration/commit), so the `ready`
- * gate never flips: `is-ready` is never applied (the video stays at
- * `opacity: 0`) and `scrubToScroll` keeps skipping seeks because
- * `readyRef.current` stays false.
- *
- * These tests simulate that ordering deterministically against the real
- * component. gsap/ScrollTrigger are stubbed because jsdom has no layout/scroll
- * engine; what matters here is the media-readiness path.
+ * Desktop/tablet still use a scroll-scrubbed WebM and retain the cold-load
+ * readiness guard. At <=600px the server initially renders neither media
+ * branch, then the client mounts only the portrait image stack. This prevents
+ * a mobile browser from discovering or requesting a video before hydration.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -52,16 +39,47 @@ vi.mock('gsap/ScrollTrigger', () => ({
 
 let rafQueue: FrameRequestCallback[] = [];
 let rafId = 0;
+let mobileViewport = false;
+let mediaReadyState = 0;
+const mediaQueryListeners = new Set<(event: MediaQueryListEvent) => void>();
+const readyStateDescriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'readyState');
+const networkStateDescriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, 'networkState');
 
 beforeEach(() => {
   rafQueue = [];
   rafId = 0;
+  mobileViewport = false;
+  mediaReadyState = 0;
+  mediaQueryListeners.clear();
+
   vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
     rafQueue.push(cb);
     rafId += 1;
     return rafId;
   });
   vi.stubGlobal('cancelAnimationFrame', () => {});
+  vi.stubGlobal('matchMedia', () => ({
+    get matches() {
+      return mobileViewport;
+    },
+    media: '(max-width: 600px)',
+    addEventListener: (event: string, listener: (event: MediaQueryListEvent) => void) => {
+      if (event === 'change') mediaQueryListeners.add(listener);
+    },
+    removeEventListener: (event: string, listener: (event: MediaQueryListEvent) => void) => {
+      if (event === 'change') mediaQueryListeners.delete(listener);
+    },
+  }));
+
+  Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
+    configurable: true,
+    get: () => mediaReadyState,
+  });
+  Object.defineProperty(HTMLMediaElement.prototype, 'networkState', {
+    configurable: true,
+    get: () => 2,
+  });
+  vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => undefined);
 
   mocks.create.mockReturnValue({});
   mocks.context.mockImplementation((fn: () => void) => {
@@ -72,6 +90,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
+  if (readyStateDescriptor) Object.defineProperty(HTMLMediaElement.prototype, 'readyState', readyStateDescriptor);
+  if (networkStateDescriptor) Object.defineProperty(HTMLMediaElement.prototype, 'networkState', networkStateDescriptor);
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
@@ -82,18 +103,6 @@ function pumpFrames(count: number) {
     if (!frame) return;
     act(() => frame(performance.now()));
   }
-}
-
-/** Simulate the video element having already received media data. */
-function markVideoLoaded(video: HTMLVideoElement, readyState = 4) {
-  Object.defineProperty(video, 'readyState', { value: readyState, configurable: true });
-  Object.defineProperty(video, 'networkState', { value: 2, configurable: true });
-}
-
-function dispatchLoadedEvents(video: HTMLVideoElement) {
-  video.dispatchEvent(new Event('loadedmetadata'));
-  video.dispatchEvent(new Event('loadeddata'));
-  video.dispatchEvent(new Event('canplaythrough'));
 }
 
 function renderSSR() {
@@ -118,96 +127,65 @@ function hydrate(container: HTMLElement) {
   return () => act(() => root?.unmount());
 }
 
-describe('ScrollVideoScene hero video readiness race', () => {
-  it('recovers when media events fired before hydration (cold-load ordering)', () => {
-    // COLD-LOAD SEQUENCE: the browser parsed <video preload="auto"> from the
-    // SSR HTML and already fetched the WebM metadata; loadedmetadata/loadeddata
-    // were dispatched BEFORE React attached its JSX handlers.
+function setMobileViewport(next: boolean) {
+  mobileViewport = next;
+  act(() => {
+    mediaQueryListeners.forEach((listener) => listener({ matches: next } as MediaQueryListEvent));
+  });
+}
+
+function sourceOf(element: Element | null) {
+  return decodeURIComponent(element?.getAttribute('src') ?? '');
+}
+
+describe('ScrollVideoScene media branches', () => {
+  it('keeps all media out of SSR markup until the client selects its viewport branch', () => {
     const container = renderSSR();
-    const video = videoOf(container);
-    markVideoLoaded(video);
-    dispatchLoadedEvents(video);
 
-    // React hydrates after the media events were missed.
-    const unmount = hydrate(container);
-    pumpFrames(2);
+    expect(container.querySelector('video')).toBeNull();
+    expect(container.querySelector('.scene-media__image-stack')).toBeNull();
 
-    // The video must become visible without a manual reload.
-    expect(video.classList.contains('is-ready')).toBe(true);
-
-    unmount();
     container.remove();
   });
 
-  it('recovers when metadata is already present but its event never re-fires', () => {
-    // Worst case of the missed-event race: media data is sitting in the
-    // element (browser cache / fast delivery) but no media event ever fires
-    // again after hydration.
+  it('recovers desktop readiness when metadata is already available on a cold load', () => {
+    // The desktop <video> now mounts after hydration, but still needs to make
+    // its opacity/readiness transition safely if metadata is already present.
+    mediaReadyState = 4;
     const container = renderSSR();
-    const video = videoOf(container);
-    markVideoLoaded(video, 2);
-
     const unmount = hydrate(container);
+    const video = videoOf(container);
     pumpFrames(2);
 
     expect(video.classList.contains('is-ready')).toBe(true);
-
-    unmount();
-    container.remove();
-  });
-
-  it('flips ready when media events fire after hydration (warm-cache ordering)', () => {
-    const container = renderSSR();
-    const video = videoOf(container);
-    const unmount = hydrate(container);
-
-    markVideoLoaded(video);
-    act(() => dispatchLoadedEvents(video));
-    pumpFrames(2);
-
-    expect(video.classList.contains('is-ready')).toBe(true);
-
-    unmount();
-    container.remove();
-  });
-
-  it('refreshes ScrollTrigger exactly once when ready flips', () => {
-    const container = renderSSR();
-    const video = videoOf(container);
-    const unmount = hydrate(container);
-
-    markVideoLoaded(video);
-    act(() => dispatchLoadedEvents(video));
-    pumpFrames(2);
-
     expect(mocks.refresh).toHaveBeenCalledTimes(1);
 
     unmount();
     container.remove();
   });
 
-  it('does not gate the copy panels on media readiness', () => {
+  it('keeps desktop video readiness working when media events arrive after hydration', () => {
     const container = renderSSR();
     const unmount = hydrate(container);
+    const video = videoOf(container);
 
-    const activePanel = container.querySelector('.scene-copy--panel.is-active');
-    expect(activePanel).not.toBeNull();
+    mediaReadyState = 4;
+    act(() => video.dispatchEvent(new Event('canplaythrough')));
+    pumpFrames(2);
+
+    expect(video.classList.contains('is-ready')).toBe(true);
 
     unmount();
     container.remove();
   });
 
-  it('scrubs to the correct frame after cold-load recovery', () => {
+  it('scrubs the desktop video to the current ScrollTrigger progress once ready', () => {
+    mediaReadyState = 4;
     const container = renderSSR();
-    const video = videoOf(container);
-
-    // Cold load: media events were already missed before hydration.
-    markVideoLoaded(video);
-    dispatchLoadedEvents(video);
     const unmount = hydrate(container);
+    const video = videoOf(container);
     pumpFrames(2);
 
-    // ScrollTrigger was created with the expected pin configuration.
     const triggerVars = mocks.create.mock.calls[0][0] as {
       pin: boolean;
       end: string;
@@ -216,9 +194,6 @@ describe('ScrollVideoScene hero video readiness race', () => {
     expect(triggerVars.pin).toBe(true);
     expect(triggerVars.end).toBe('+=520%');
 
-    // Scroll to the middle of the pinned range; the scrub loop must seek the
-    // video to the matching frame instead of skipping it (the pre-fix bug
-    // skipped every seek because `readyRef.current` never flipped).
     act(() => triggerVars.onUpdate({ progress: 0.5 }));
     Object.defineProperty(video, 'duration', { value: 25, configurable: true });
     video.currentTime = 0;
@@ -226,6 +201,63 @@ describe('ScrollVideoScene hero video readiness race', () => {
 
     expect(video.currentTime).toBeGreaterThan(10);
     expect(video.currentTime).toBeLessThan(15);
+
+    unmount();
+    container.remove();
+  });
+
+  it('mounts the five mapped static frames and no video on mobile', () => {
+    setMobileViewport(true);
+    const container = renderSSR();
+    const unmount = hydrate(container);
+
+    expect(container.querySelector('video')).toBeNull();
+    expect(rafQueue).toHaveLength(0);
+    expect([...container.querySelectorAll('.scene-media__image')].map((image) => sourceOf(image))).toEqual(expect.arrayContaining([
+      expect.stringContaining('/media/frame-01-rocks-916.webp'),
+      expect.stringContaining('/media/frame-02-topography-916.webp'),
+      expect.stringContaining('/media/frame-03-cross-section-916.webp'),
+      expect.stringContaining('/media/frame-04-diorama-916.webp'),
+      expect.stringContaining('/media/frame-05-layers-916.webp'),
+    ]));
+    expect(sourceOf(container.querySelector('.scene-media__image.is-active'))).toContain('/media/frame-01-rocks-916.webp');
+
+    unmount();
+    container.remove();
+  });
+
+  it('uses mobile ScrollTrigger progress to change the active frame and copy panel', () => {
+    setMobileViewport(true);
+    const container = renderSSR();
+    const unmount = hydrate(container);
+
+    const triggerVars = mocks.create.mock.calls[0][0] as {
+      pin: boolean;
+      end: string;
+      onUpdate: (self: { progress: number }) => void;
+    };
+    expect(triggerVars.pin).toBe(true);
+    expect(triggerVars.end).toBe('+=520%');
+
+    act(() => triggerVars.onUpdate({ progress: 0.5 }));
+
+    expect(container.querySelector('.scene-copy--panel.is-active')?.getAttribute('data-scene')).toBe('first-principles');
+    expect(sourceOf(container.querySelector('.scene-media__image.is-active'))).toContain('/media/frame-03-cross-section-916.webp');
+    expect(container.querySelector('video')).toBeNull();
+
+    unmount();
+    container.remove();
+  });
+
+  it('unmounts desktop video when a viewport switches into the mobile branch', () => {
+    const container = renderSSR();
+    const unmount = hydrate(container);
+    expect(container.querySelector('video')).not.toBeNull();
+
+    setMobileViewport(true);
+
+    expect(container.querySelector('video')).toBeNull();
+    expect(container.querySelectorAll('.scene-media__image')).toHaveLength(5);
 
     unmount();
     container.remove();

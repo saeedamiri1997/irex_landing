@@ -48,49 +48,6 @@ main {
 
 
 /* =========================================================
-   SMART PRELOADER
-   ========================================================= */
-
-.smart-preloader {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    overflow: hidden;
-    background: var(--navy);
-    pointer-events: auto;
-    transform: translate3d(0, 0, 0);
-    transition: transform 0.36s cubic-bezier(0.83, 0, 0.17, 1);
-}
-
-.smart-preloader--exit {
-    transform: translate3d(0, -100%, 0);
-    pointer-events: none;
-}
-
-.smart-preloader__fill {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    background: #C97A32;
-    transform-origin: 50% 100%;
-    transition: transform 0.18s linear;
-    will-change: transform;
-}
-
-.smart-preloader__counter {
-    position: absolute;
-    right: clamp(24px, 4vw, 56px);
-    bottom: clamp(22px, 4vw, 54px);
-    z-index: 2;
-    font-family: 'Instrument Serif', serif;
-    font-size: clamp(3.6rem, 9vw, 8rem);
-    line-height: 0.82;
-    color: var(--white);
-    pointer-events: none;
-}
-
-
-/* =========================================================
    COMMON / TYPOGRAPHY
    ========================================================= */
 
@@ -411,6 +368,24 @@ h2 {
 }
 
 .scene-media video.is-ready {
+    opacity: 1;
+}
+
+.scene-media__image-stack,
+.scene-media__image {
+    position: absolute;
+    inset: 0;
+}
+
+.scene-media__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.55s ease;
+}
+
+.scene-media__image.is-active {
     opacity: 1;
 }
 
@@ -1757,10 +1732,6 @@ h2 {
         min-height: 100svh;
     }
 
-    .scene-media video {
-        object-fit: cover;
-    }
-
     /* On phones the closing statement cannot reasonably stay on a single
        line at a readable size, so let it wrap gracefully (never overflow).
        It remains the bold coral emphasis line, still larger than lines 2–3. */
@@ -1858,6 +1829,7 @@ h2 {
     .site-header,
     .specular-button,
     .scene-media video,
+    .scene-media__image,
     .line-sidebar * {
         transition: none !important;
     }
