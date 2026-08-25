@@ -1,6 +1,6 @@
 # IREX Landing — Project Documentation
 
-**Last updated:** 2026-08-24
+**Last updated:** 2026-08-25
 
 This document describes the implementation currently in this repository. It is intended to be the source of truth for a future developer or coding agent; it deliberately records behavior that is easy to misread from the visual design alone.
 
@@ -22,6 +22,7 @@ There is no login, database, CMS, analytics integration, or persistent applicati
 | Host runtime | Node.js 20 or newer |
 | Styling | One global stylesheet: `app/globals.css`; no Tailwind or CSS modules |
 | Next output | `output: 'standalone'` in the root Next config |
+| Tests | Vitest 3 + jsdom; regression suite in `tests/` (`npm test`) |
 
 The repository has both `next.config.js` and `next.config.ts`; their settings are currently equivalent. Next uses the JavaScript config in normal builds. Do not edit one without checking the other.
 
@@ -47,6 +48,10 @@ lib/
   content.ts                 Sidebar sections, video paths and scene copy
   dpr.ts                     Shared matchMedia device-pixel-ratio watcher
   email.ts                   Resend/log email configuration and delivery
+tests/
+  scroll-video-scene.race.test.tsx  Cold-load readiness/scrub regression suite
+  setup.ts                   React `act` test-environment flag
+vitest.config.ts             Vitest configuration (jsdom, `@` alias)
 public/
   brand/                     IREX logos
   media/                     WebM, legacy MP4 and PNG media assets
@@ -101,6 +106,38 @@ The five scene ranges are defined in seconds in `lib/content.ts`:
 | `limitations` | 20.64–25.00 | Why patterns do not equal understanding |
 
 The text panels are stacked in one grid cell and activated by the ScrollTrigger progress. The video loop is always scheduled while the component is mounted, but actual `currentTime` assignments are throttled to at most 30 per second and skipped when the target has moved less than 0.04 seconds. This reduces expensive media seeks while preserving scroll-following behavior.
+
+### 3.3 Hero video cold-load readiness (race-condition fix)
+
+The hero video had a first-visit-only bug: with an empty browser cache, the video stayed hidden (`opacity: 0`, no `is-ready` class) and never scrubbed until the user manually reloaded the page. After a reload (warm cache) it worked, which made it look like a hosting/CDN problem — it was not; it is a client-side timing race.
+
+**Root cause.** `<video preload="auto">` is present in the SSR HTML, so the browser starts fetching the WebM (and parses its header) the moment the HTML is parsed — while the Next.js JS bundle is still downloading and React has not yet hydrated. The readiness gate was driven exclusively by JSX handlers:
+
+```tsx
+onLoadedMetadata={() => setReady(true)}
+onLoadedData={() => setReady(true)}
+onCanPlayThrough={() => setReady(true)}
+```
+
+React attaches those listeners only during hydration. On a cold load, `loadedmetadata` typically fires *before* hydration, so the handlers never see it, `ready` stays `false` forever, and:
+
+- `.is-ready` is never applied, so the CSS keeps the video at `opacity: 0` (the reported "hidden/blank" hero); and
+- `scrubToScroll` skips every seek (`readyRef.current` gating), so the scroll-scrub is dead even after the media finishes downloading.
+
+On a warm reload the media comes from cache and hydration wins the race, which is why the bug only appeared on first visit. The same failure also happens if the metadata event is missed for any other reason, and any future viewer that relies on an unmissable gate would inherit it.
+
+**Why the pin-range hypothesis was rejected.** The suspected desync of ScrollTrigger's pin range (`end: '+=520%'`) was checked carefully and is not the fault: in GSAP 3.15 the `+=N%` end offset is resolved against the *scroller (viewport) size* (`_offsetToPx(value, size)` where `size` is the viewport height), not the trigger height, and the `<video>` is `position: absolute` inside a fixed-height section, so video metadata/dimensions never change the section's layout. The pin range is therefore identical before and after metadata loads; no `ScrollTrigger.refresh()` can fix the hidden-video symptom because the symptom is the `ready` gate, not the scroll range. A defensive `ScrollTrigger.refresh()` is still issued on the ready transition (below) to re-sync progress if anything else shifted layout during media loading (fonts, preloader unlock, scrollbar appearance).
+
+**Fix implemented in `ScrollVideoScene.tsx`:**
+
+1. Media listeners are attached natively in the mount effect (`loadedmetadata`, `loadeddata`, `canplay`, `canplaythrough`) instead of via JSX props. After hydration, they cannot miss events, and their lifetime is tied to the ScrollTrigger's.
+2. At mount the component reads `video.readyState` directly; if metadata is already present (`readyState >= 1`), readiness is applied immediately — this recovers events that fired before hydration.
+3. The existing per-frame `scrubToScroll` loop also polls `readyState` as a safety net, so readiness can never get stuck even if a media event is missed for any other reason.
+4. If resource selection never started (`networkState` EMPTY/IDLE) at mount, `video.load()` re-kicks it so events fire after the listeners are attached.
+5. Readiness is now set through one idempotent `markReady()` (ref + state atomically) so the gate flips exactly once; on the transition `ScrollTrigger.refresh()` is called.
+6. `muted` was moved from the JSX prop to `video.muted = true` in the effect to remove a benign React 19 SSR hydration-mismatch warning (React does not serialize `muted` into the server HTML).
+
+Behavior is unchanged when media loads normally: the video fades in via `.is-ready` and immediately scrubs to the frame matching the current scroll position (`targetProgress` is already tracking scroll while hidden), so no black flash or frame jump is introduced.
 
 ## 4. Media and static assets
 
@@ -306,11 +343,28 @@ A numeric post-fix browser result could not be produced in this sandbox. There i
 
 There is also no production domain or valid production Turnstile/Resend credential set available in this checkout. The local log-mode/API test is explicitly not a production Turnstile or mailbox-delivery verification. An operator with hosting/domain access must run the real-browser submission and delivery test described in `HOSTING.md`.
 
+### 9.4 Hero video cold-load race verification
+
+A regression suite was added at `tests/scroll-video-scene.race.test.tsx` (`npm test`). It renders the real `ScrollVideoScene` through React's server renderer and hydrates it in jsdom with `gsap`/`ScrollTrigger` stubbed (jsdom has no layout engine, so the pin math itself cannot run there; the ScrollTrigger config is asserted from the created trigger). The suite deterministically reproduces the cold-load ordering — media events dispatched on the SSR'd video *before* hydration — plus these cases:
+
+1. Media events fired before hydration: video must become `is-ready` without a manual reload (fails on the pre-fix code; passes with the fix).
+2. Metadata already present in the element but its event never re-fires: must still recover (fails pre-fix; passes post-fix).
+3. Media events fired after hydration (warm-cache ordering): must stay working.
+4. `ScrollTrigger.refresh()` is called exactly once when readiness flips (0 calls pre-fix because readiness never flipped).
+5. The scene copy panels are not gated on media readiness.
+6. After cold-load recovery, scrolling to 50% of the pinned range seeks the video to the matching frame (pre-fix every seek was skipped because `readyRef` never flipped).
+
+Pre-fix the suite fails 3 tests (the exact reported failure modes); post-fix all 6 pass. `npm run build` and `npm run lint` also pass; the standalone production server serves `/`, both WebM assets with range requests and the immutable cache header.
+
+Still not possible in this sandbox: a real browser with a fully cleared cache (there is no Chromium/Chrome binary and the Playwright/Chromium download CDN is unreachable here, same constraint as section 9.3). The jsdom suite exercises the real component and the real event-ordering race, but an operator should still do one genuine first-visit check against the deployed site (devtools → Application → Clear site data, or a fresh incognito window) to confirm the video fades in and scrubs with no manual reload.
+
 ## 10. Editing guidance
 
 - Keep `/media` filenames versioned because of the immutable cache header.
 - If changing a hero scene range, update both `lib/content.ts` and the scene/progress verification checks.
 - Preserve WebGL cleanup and the visibility/page-visibility gates when changing effects.
 - Preserve the mobile source media query at 600px unless the design breakpoint changes everywhere.
+- Do not revert the hero video readiness handling in `ScrollVideoScene.tsx` to JSX-only media props (`onLoadedMetadata` etc.): the native listeners plus `readyState` checks are what make first-visit (cold cache) loads reliable.
+- Run `npm test` after touching `ScrollVideoScene.tsx`; `tests/scroll-video-scene.race.test.tsx` is the regression suite for the cold-load race.
 - Do not replace production email variables with defaults in code. Use `EMAIL_DELIVERY_MODE=log` for local dry-runs.
 - If adding a new sidebar section, add both its DOM `id` and its `sections` entry in matching order.

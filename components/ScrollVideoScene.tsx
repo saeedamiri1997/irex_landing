@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { narrativeMobileVideo, narrativeVideo, videoScenes } from '@/lib/content';
@@ -11,6 +11,10 @@ gsap.registerPlugin(ScrollTrigger);
 const NARRATIVE_DURATION = 25;
 const MIN_VIDEO_SEEK_DELTA = 0.04;
 const MIN_VIDEO_SEEK_INTERVAL_MS = 1000 / 30;
+/** HTMLMediaElement.HAVE_METADATA — metadata (duration/dimensions) is available. */
+const HAVE_METADATA = 1;
+/** HTMLMediaElement.HAVE_CURRENT_DATA — data for the current playback position is available. */
+const HAVE_CURRENT_DATA = 2;
 
 export default function ScrollVideoScene({ onApply }: { onApply?: () => void }) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -25,27 +29,53 @@ export default function ScrollVideoScene({ onApply }: { onApply?: () => void }) 
     [],
   );
 
-  useEffect(() => {
-    readyRef.current = ready;
-  }, [ready]);
+  /**
+   * Flip the media-ready gate exactly once. The gate controls both the video's
+   * opacity (`is-ready`) and the seeks in `scrubToScroll`, so it must never be
+   * able to get stuck at false. Returns true only on the transition so
+   * follow-up work (ScrollTrigger refresh) runs once.
+   */
+  const markReady = useCallback(() => {
+    if (readyRef.current) return false;
+    readyRef.current = true;
+    setReady(true);
+    return true;
+  }, []);
 
   useEffect(() => {
     const section = sectionRef.current;
     const video = videoRef.current;
     if (!section || !video) return;
 
+    // React does not serialize `muted` into SSR HTML, so declaring it in JSX
+    // triggers a hydration mismatch warning; set it as a DOM property instead.
+    video.muted = true;
+
     let targetProgress = 0;
     let raf = 0;
     let lastSeekAt = -Infinity;
 
+    const handleMediaReady = () => {
+      // Once the media is available, re-sync ScrollTrigger. The pin range
+      // itself is stable (the video is absolutely positioned and `+=520%` is
+      // relative to the viewport), but this defensively covers any layout
+      // shift that happened while the media was still loading (fonts,
+      // preloader unlock, scrollbar appearance) and re-syncs progress.
+      if (markReady()) ScrollTrigger.refresh();
+    };
+
     const scrubToScroll = (now: number) => {
+      // Safety net: poll readyState so readiness can never be lost even if a
+      // media event fired before hydration and never re-fires.
+      if (!readyRef.current && video.readyState >= HAVE_METADATA) handleMediaReady();
+
       const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : NARRATIVE_DURATION;
       const targetTime = gsap.utils.clamp(0, duration, targetProgress * duration);
       const timeSinceLastSeek = now - lastSeekAt;
 
       if (
         readyRef.current
-        && video.readyState >= 2
+        && video.readyState >= HAVE_CURRENT_DATA
         && timeSinceLastSeek >= MIN_VIDEO_SEEK_INTERVAL_MS
         && Math.abs(targetTime - video.currentTime) >= MIN_VIDEO_SEEK_DELTA
       ) {
@@ -55,8 +85,6 @@ export default function ScrollVideoScene({ onApply }: { onApply?: () => void }) 
 
       raf = requestAnimationFrame(scrubToScroll);
     };
-
-    raf = requestAnimationFrame(scrubToScroll);
 
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
@@ -82,23 +110,41 @@ export default function ScrollVideoScene({ onApply }: { onApply?: () => void }) 
       });
     }, section);
 
+    // Attach media listeners natively. `preload="auto"` means the browser can
+    // start fetching the SSR'd <video> before React hydrates, so the JSX
+    // `onLoadedMetadata` handlers alone can permanently miss the events on a
+    // cold load (video then stays at opacity 0 and never scrubs — the bug).
+    const mediaEvents = ['loadedmetadata', 'loadeddata', 'canplay', 'canplaythrough'] as const;
+    mediaEvents.forEach((event) => video.addEventListener(event, handleMediaReady));
+
+    // Cold-load recovery: if the media had already loaded by the time React
+    // hydrated, read the current readyState instead of waiting for an event
+    // that already fired.
+    if (video.readyState >= HAVE_METADATA) handleMediaReady();
+
+    // If resource selection never started (deferred/stalled, e.g. low-power
+    // mode or a browser that paused preload), re-kick it now that our
+    // listeners are attached so the media events fire deterministically.
+    if (video.readyState < HAVE_METADATA && (video.networkState === 0 || video.networkState === 1)) {
+      video.load();
+    }
+
+    raf = requestAnimationFrame(scrubToScroll);
+
     return () => {
       cancelAnimationFrame(raf);
+      mediaEvents.forEach((event) => video.removeEventListener(event, handleMediaReady));
       ctx.revert();
     };
-  }, [progressStops]);
+  }, [progressStops, markReady]);
 
   return (
     <section id="hero" ref={sectionRef} className="video-scene video-scene--narrative">
       <div className="scene-media" aria-hidden="true">
         <video
           ref={videoRef}
-          muted
           playsInline
           preload="auto"
-          onLoadedMetadata={() => setReady(true)}
-          onLoadedData={() => setReady(true)}
-          onCanPlayThrough={() => setReady(true)}
           className={ready ? 'is-ready' : ''}
         >
           <source src={narrativeMobileVideo} type="video/webm" media="(max-width: 600px)" />
