@@ -9,7 +9,6 @@ import SpotlightCard from './SpotlightCard';
 import ShapeBlur from './ShapeBlur';
 import Topography from './Topography';
 import SpecularButton from './SpecularButton';
-import SmartPreloader from './SmartPreloader';
 import Image from 'next/image';
 
 const auditItems = [
@@ -48,7 +47,6 @@ export default function LandingPage() {
 
   return (
     <main>
-      <SmartPreloader />
       <Header />
       <LineSidebar />
       <ScrollVideoScene onApply={openApply} />
