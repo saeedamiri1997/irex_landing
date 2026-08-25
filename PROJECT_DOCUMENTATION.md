@@ -324,7 +324,7 @@ There is also no production domain or valid production Turnstile/Resend credenti
 6. Mobile `ScrollTrigger` progress activates `first-principles` copy and `frame-03-cross-section-916.webp` at 50% progress.
 7. Crossing from a desktop/tablet viewport into the mobile breakpoint unmounts the video and mounts the static frame stack.
 
-`npm test` and `npm run build` passed for this change. A genuine browser DevTools cold-cache/network-tab check cannot be recorded from this sandbox because no Chrome/Chromium executable is installed. Before release, validate once in an incognito window with cache disabled: at >600px the desktop video should fade in and scrub, while at <=600px the Network tab must show WebP/Next image optimizer request(s) and no `irex-scroll-narrative*.webm` request.
+`npm test` and `npm run build` passed for this change. A local production-server smoke check confirmed that the SSR page contains zero hero `<video>` tags, image-stack markup, or WebM paths before client viewport selection; the desktop WebM and a representative WebP frame return HTTP 200 with immutable caching, and the removed mobile WebM returns HTTP 404. A genuine browser DevTools cold-cache/network-tab check cannot be recorded from this sandbox because no Chrome/Chromium executable is installed. Before release, validate once in an incognito window with cache disabled: at >600px the desktop video should fade in and scrub, while at <=600px the Network tab must show WebP/Next image optimizer request(s) and no `irex-scroll-narrative*.webm` request.
 
 ## 10. Editing guidance
 
