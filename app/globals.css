@@ -1769,6 +1769,17 @@ h2 {
         display: none;
     }
 
+    /* The First Principles CTA (Apply to Join / Limited Early Adopter
+       Program) is desktop-only. On mobile the whole action block — button
+       and its microcopy — is removed from the layout entirely, so the scene
+       ends with the textual content and no reserved height or spacing is
+       left behind. Desktop/tablet keep it unchanged. (Scoped to the
+       first-principles scene: the `cgr` hero scene has its own CTA that
+       must stay visible on mobile.) */
+    .scene-copy[data-scene="first-principles"] .hero-actions {
+        display: none;
+    }
+
     .spotlight-card {
         padding: 24px;
         min-height: 210px;
