@@ -1,6 +1,6 @@
 # IREX Landing — Project Documentation
 
-**Last updated:** 2026-08-25
+**Last updated:** 2026-08-26
 
 This document describes the implementation currently in this repository. It is intended to be the source of truth for a future developer or coding agent; it deliberately records behavior that is easy to misread from the visual design alone.
 
@@ -112,7 +112,30 @@ The **exact mobile boundary is `max-width: 600px`, inclusive**. To make sure a p
 
 The media-query listener also changes branches if a browser viewport crosses 600px after mount. In the mobile branch, the GSAP pin and progress logic remains active; it continues to drive both copy and static-frame selection without a video seek.
 
-### 3.3 Desktop hero video readiness (cold-load guard)
+### 3.3 Desktop-only hero content (mobile visibility)
+
+Two hero content blocks are intentionally desktop/tablet-only and are hidden at the mobile breakpoint. Both changes are **pure CSS visibility changes inside the existing `@media (max-width: 600px)` block** — the elements stay in the SSR/client DOM for every viewport (so desktop markup, React state, and all hero JS/GSAP behavior are byte-for-byte unchanged), and `display: none` removes each block from the mobile layout entirely, leaving no reserved height, margins, or gaps.
+
+- **"This leads to:" consequence list — desktop-only.** The `problem` scene's `listIntro` (`<p class="scene-list-intro">This leads to:</p>`) and its four `scene-bullets` are hidden on mobile with:
+
+  ```css
+  .scene-copy[data-scene="problem"] .scene-list-intro,
+  .scene-copy[data-scene="problem"] .scene-bullets { display: none; }
+  ```
+
+  The selector is scoped to `data-scene="problem"` because the `limitations` scene reuses the same classes for its own "In practice:" list, which must remain visible on mobile. Desktop/tablet keep displaying this block exactly as before.
+
+- **First Principles CTA — desktop-only.** The `first-principles` scene's `.hero-actions` block (the "Apply to Join↗" `SpecularButton` plus its "Limited Early Adopter Program" `microcopy`) is hidden on mobile with:
+
+  ```css
+  .scene-copy[data-scene="first-principles"] .hero-actions { display: none; }
+  ```
+
+  The selector is scoped to `data-scene="first-principles"` because the `cgr` hero scene has its own `.hero-actions` CTA, which must remain visible on mobile. On mobile the First Principles scene now ends with its textual content ("Prediction fails where the system is not understood."). Desktop/tablet keep the CTA fully visible and unchanged.
+
+The mobile breakpoint used is the project's existing **`max-width: 600px` (inclusive)** — the same boundary as the CSS mobile media query and the hero's `matchMedia('(max-width: 600px)')` media branch. No new breakpoint was introduced. The existing hero/GSAP behavior (pin, `end: '+=520%'`, scrub, active scene/index logic, mobile WebP crossfade, desktop/tablet WebM readiness and scrub) was intentionally left unchanged.
+
+### 3.4 Desktop hero video readiness (cold-load guard)
 
 The desktop/tablet video retains the readiness guard that prevents a cold-load blank hero. It is initially transparent and becomes visible only after `markReady()` applies `is-ready`. The native `loadedmetadata`, `loadeddata`, `canplay`, and `canplaythrough` listeners are attached in the desktop-only effect; the effect also reads `video.readyState` immediately and polls it in the scrub loop. Therefore an event that occurs before listener attachment cannot leave the gate permanently false.
 
@@ -172,6 +195,7 @@ The base stylesheet still has `body { overflow-x: hidden; }` as a defensive guar
 - The problem statement can wrap at tablet/mobile widths.
 - The mobile portrait WebP frame stack uses `object-fit: cover`, preserving its 9:16 composition while covering the hero. The desktop/tablet video rule is also `cover`.
 - The prediction closing line remains `nowrap` on desktop/tablet but is intentionally allowed to wrap at 600px and below because a readable single line is not possible on a phone.
+- At 600px and below, two hero content blocks are desktop-only and removed from the mobile layout with `display: none` (scoped by `data-scene`): the `problem` scene's "This leads to:" consequence list and the `first-principles` scene's CTA block. See section 3.4.
 
 The exact viewport matrix used for overflow checks is 375×812, 390×844, 600×900, 720×900, 768×1024, and 900×900. The intended invariant at each size is `document.documentElement.scrollWidth <= window.innerWidth` and no horizontal scrollbar.
 
@@ -326,12 +350,30 @@ There is also no production domain or valid production Turnstile/Resend credenti
 
 `npm test` and `npm run build` passed for this change. A local production-server smoke check confirmed that the SSR page contains zero hero `<video>` tags, image-stack markup, or WebM paths before client viewport selection; the desktop WebM and a representative WebP frame return HTTP 200 with immutable caching, and the removed mobile WebM returns HTTP 404. A genuine browser DevTools cold-cache/network-tab check cannot be recorded from this sandbox because no Chrome/Chromium executable is installed. Before release, validate once in an incognito window with cache disabled: at >600px the desktop video should fade in and scrub, while at <=600px the Network tab must show WebP/Next image optimizer request(s) and no `irex-scroll-narrative*.webm` request.
 
+### 9.5 Desktop-only content verification (this change)
+
+`npm test` (7/7 checks in `tests/scroll-video-scene.race.test.tsx`) and `npm run build` passed with the two mobile visibility changes in place; the hero media-branch suite is green and untouched, confirming the mobile WebP hero, scene-to-image mapping, GSAP pin/progress, active-scene logic, and desktop/tablet WebM readiness/scrub behavior are unchanged.
+
+A production-server smoke check (built app served with `next start`) confirmed the SSR markup still contains the `problem` scene's "This leads to:" intro and bullets and the `first-principles` scene's `.hero-actions` CTA with its microcopy — the hiding is purely CSS at the mobile breakpoint, so desktop markup is identical to before.
+
+A postcss cascade verification against the real `app/globals.css` confirmed the effective computed `display` at five widths:
+
+| Width | "This leads to:" intro/bullets (`problem`) | First Principles CTA (`first-principles`) | `cgr` hero CTA | `limitations` list |
+|---|---|---|---|---|
+| 390px / 600px (mobile, ≤600px) | `none` (hidden, no layout space) | `none` (hidden, no layout space) | `flex` (visible) | `grid`/`block` (visible) |
+| 601px / 768px / 1280px | `block` / `grid` (visible) | `flex` (visible) | `flex` (visible) | `grid`/`block` (visible) |
+
+The cascade scan also confirmed that no other rule in the stylesheet declares a `display` for these selectors outside the base rules and the two scoped `≤600px` rules, so there is no competing declaration at any width. Because the blocks are removed with `display: none`, no empty spacing, reserved height, or margins remain in the mobile hero panels, and the surrounding panel content (e.g. the CGR™ hero copy and the From Prediction To Reasoning panel) flows in the intended mobile layout without the "This leads to:" block occupying vertical space.
+
+Browser-based visual verification was **not** available in this sandbox: no Chrome/Chromium executable is installed, the Playwright browser download connection was reset, and apt cannot reach its mirrors (the same limitation recorded in section 9.3). The computed-display checks above are CSS-cascade resolution over the real stylesheet, not a pixel-level browser render. Before release, visually confirm once in a real browser at a ≤600px viewport that the two blocks are absent with no leftover gap, and at >600px that both are displayed exactly as before.
+
 ## 10. Editing guidance
 
 - Keep `/media` filenames versioned because of the immutable cache header.
 - If changing a hero scene range, update both `lib/content.ts` and the scene/progress verification checks.
 - Preserve WebGL cleanup and the visibility/page-visibility gates when changing effects.
 - Preserve the `matchMedia('(max-width: 600px)')` media branch unless the design breakpoint changes everywhere. Do not emit the desktop video in SSR markup or use CSS hiding as a substitute.
+- Hero content that must be desktop-only is hidden inside the existing `@media (max-width: 600px)` block and must be scoped with `data-scene` (e.g. `.scene-copy[data-scene="problem"] .scene-bullets`), because the `scene-bullets`/`scene-list-intro`/`hero-actions` classes are reused by multiple scenes with different visibility requirements (see section 3.4).
 - Do not revert the desktop hero readiness handling in `ScrollVideoScene.tsx` to JSX-only media props (`onLoadedMetadata` etc.): the native listeners plus `readyState` checks are what make cold-cache loads reliable.
 - Run `npm test` after touching `ScrollVideoScene.tsx`; `tests/scroll-video-scene.race.test.tsx` is the regression suite for the cold-load race.
 - Do not replace production email variables with defaults in code. Use `EMAIL_DELIVERY_MODE=log` for local dry-runs.
